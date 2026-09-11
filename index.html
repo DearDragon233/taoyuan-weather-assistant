@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>桃园农事气象助手 | 平谷大桃种植者的免费决策工具</title>
+<meta name="description" content="给平谷桃农的免费农事气象小助手：什么时候防冻、什么时候醒芽、哪天能采桃、什么时候防病，打开手机就能看。数据来自公开气象服务，全部计算在您自己的手机上完成，不用注册、不用安装。">
+<style>
+/* ============ 设计令牌（沿用 biohub 设计语言） ============ */
+:root {
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --ink: #1c1917;
+  --ink-2: #57534e;
+  --ink-3: #a8a29e;
+  --line: #e7e5e4;
+  --accent: #047857;
+  --accent-soft: #ecfdf5;
+  --accent-line: #a7f3d0;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+  --warn: #a16207;
+  --warn-soft: #fefce8;
+  --info: #4e7ca1;
+  --violet: #6d5bae;
+  --harvest: #c2410c;
+  --mono: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace;
+  --sans: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(28,25,23,.04), 0 8px 24px rgba(28,25,23,.05);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+::selection { background: var(--accent-soft); color: var(--accent); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+/* ============ 导航（sticky 毛玻璃） ============ */
+nav { position: sticky; top: 0; z-index: 50; background: rgba(250,250,249,.86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.nav-inner { max-width: 1080px; margin: 0 auto; padding: 0 28px; height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; letter-spacing: -.01em; text-decoration: none; color: var(--ink); }
+.logo svg { flex-shrink: 0; }
+.nav-links { display: flex; gap: 4px; align-items: center; }
+.nav-links a { text-decoration: none; color: var(--ink-2); font-size: 14px; font-weight: 500; padding: 8px 14px; border-radius: 8px; transition: color .15s, background .15s; }
+.nav-links a:hover { color: var(--ink); background: #f0efee; }
+.nav-links a:active { transform: translateY(1px); }
+/* ---------- 移动端抽屉导航 ---------- */
+.nav-toggle { display: none; background: none; border: 1px solid var(--line); border-radius: 9px;
+  width: 44px; height: 44px; cursor: pointer; flex-direction: column; align-items: center;
+  justify-content: center; gap: 5px; padding: 0; transition: border-color .15s; }
+.nav-toggle:hover { border-color: var(--accent); }
+.nav-toggle span { display: block; width: 20px; height: 2px; background: var(--ink); border-radius: 2px; transition: transform .2s, opacity .2s; }
+.nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.nav-backdrop { display: none; }
+.nav-drawer { display: none; }
+
+@media (max-width: 720px) {
+  /* 顶栏只留 logo + 汉堡按钮，横排链接整体收进抽屉 */
+  .nav-links { display: none; }
+  .nav-toggle { display: flex; }
+  .nav-backdrop { display: block; position: fixed; inset: 0; background: rgba(28,25,23,.38);
+    opacity: 0; pointer-events: none; transition: opacity .22s; z-index: 90; }
+  .nav-backdrop.show { opacity: 1; pointer-events: auto; }
+  .nav-drawer { display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; margin: 0;
+    width: min(78vw, 320px); background: var(--surface); border-right: 1px solid var(--line);
+    box-shadow: 8px 0 32px rgba(28,25,23,.14); z-index: 100;
+    transform: translateX(-102%); transition: transform .26s cubic-bezier(.16,1,.3,1);
+    padding: 18px 14px calc(16px + env(safe-area-inset-bottom)); overflow-y: auto; }
+  .nav-drawer.open { transform: translateX(0); }
+  .drawer-head { display: flex; align-items: center; justify-content: space-between;
+    padding: 2px 6px 14px; border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+  .drawer-title { font-weight: 800; font-size: 15px; }
+  .drawer-close { width: 40px; height: 40px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink-2); font-size: 15px; cursor: pointer; }
+  .drawer-close:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-drawer > a { display: flex; align-items: center; gap: 10px; text-decoration: none;
+    color: var(--ink); font-size: 15px; font-weight: 600; padding: 14px 12px;
+    border-radius: 10px; transition: background .14s; min-height: 48px; }
+  .nav-drawer > a:hover { background: var(--accent-soft); }
+  .nav-drawer > a:active { transform: translateY(1px); }
+  .drawer-foot { margin-top: auto; padding: 14px 6px 0; font-size: 11px; color: var(--ink-3); }
+  body.drawer-open { overflow: hidden; }
+}
+
+
+
+/* ============ Hero ============ */
+.hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); text-align: left; }
+.hero-bg { position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(600px 320px at 85% -10%, rgba(4,120,87,.07), transparent 70%),
+    radial-gradient(500px 300px at -5% 110%, rgba(194,65,12,.05), transparent 70%);
+  animation: heroDrift 18s ease-in-out infinite alternate; }
+@keyframes heroDrift { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-2.5%, 2%, 0) scale(1.05); } }
+.hero-inner { position: relative; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 48px; align-items: center; padding: 56px 0 52px; text-align: left; }
+@media (max-width: 900px) { .hero-inner { grid-template-columns: 1fr; padding: 44px 0; gap: 32px; } }
+.hero h1 { font-size: clamp(32px, 4.4vw, 48px); line-height: 1.12; letter-spacing: -.025em; font-weight: 800; }
+.hero h1 .accent { color: var(--accent); }
+.hero .sub { margin-top: 16px; font-size: 16px; color: var(--ink-2); max-width: 46ch; }
+.hero .cta-row { margin-top: 26px; display: flex; gap: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 10px; font-weight: 600; font-size: 15px; padding: 12px 22px; cursor: pointer; text-decoration: none; transition: transform .12s ease, box-shadow .15s ease, background .15s ease; border: 1px solid transparent; }
+.btn:active { transform: translateY(1px) scale(.99); }
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 2px rgba(4,120,87,.3); }
+.btn-primary:hover { background: #065f46; }
+.btn-ghost { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--ink-3); }
+
+/* Hero 右侧：今日速览（真实数据，非装饰） */
+.hero-tool { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px 22px 18px; }
+.hero-tool .tool-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.hero-tool .tool-head .t { font-weight: 700; font-size: 15px; }
+.hero-tool .tool-head .s { font-size: 12px; color: var(--ink-3); }
+.tool-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; font-size: 13px; color: var(--ink-2); }
+.tool-row select { font-size: 13.5px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fcfcfb; color: var(--ink); font-family: inherit; transition: border-color .15s, box-shadow .15s; max-width: 52vw; }
+.tool-row select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(4,120,87,.12); }
+.tool-row .refresh { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; transition: all .15s; }
+.tool-row .refresh:hover { border-color: var(--accent); color: var(--accent); }
+.tool-row .refresh:active { transform: translateY(1px); }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+
+.stat-cell { background: #f5f5f4; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.stat-cell .k { font-size: 11px; color: var(--ink-3); font-weight: 600; letter-spacing: .04em; }
+.stat-cell .v { font-size: 16px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.stat-cell .v b { color: var(--accent); }
+.stat-cell .s { font-size: 11.5px; color: var(--ink-2); margin-top: 1px; }
+.tool-note { margin-top: 10px; font-size: 12px; color: var(--ink-3); }
+
+/* ============ 通用 Section ============ */
+section { padding: 64px 0; }
+@media (max-width: 720px) { section { padding: 44px 0; } }
+.sec-head { margin-bottom: 30px; max-width: 660px; }
+.sec-head h2 { font-size: clamp(23px, 3vw, 31px); letter-spacing: -.02em; font-weight: 800; line-height: 1.2; }
+.sec-head p { margin-top: 10px; color: var(--ink-2); font-size: 15px; }
+
+/* ============ 卡片与 Bento ============ */
+.bento { display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); }
+.bento > * { min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.card:hover { border-color: #d6d3d1; box-shadow: var(--shadow); transform: translateY(-2px); }
+.span-12 { grid-column: span 12; } .span-8 { grid-column: span 8; } .span-7 { grid-column: span 7; }
+.span-6 { grid-column: span 6; } .span-5 { grid-column: span 5; } .span-4 { grid-column: span 4; }
+@media (max-width: 900px) { .span-8, .span-7, .span-6, .span-5, .span-4 { grid-column: span 12; } }
+.card h3 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.card h3 .ic { color: var(--accent); font-style: normal; }
+.card h3 .tagline { font-size: 11.5px; color: var(--ink-3); font-weight: 400; margin-left: auto; }
+.card .desc { font-size: 13.5px; color: var(--ink-2); margin-top: 6px; }
+.tool-body { margin-top: 16px; }
+
+/* 状态灯与徽章 */
+.light { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 7px; vertical-align: -1px; box-shadow: 0 0 0 3px rgba(28,25,23,.05); }
+.l-red { background: var(--danger); } .l-yel { background: var(--warn); } .l-ok { background: var(--accent); } .l-gry { background: #d6d3d1; }
+.big { font-size: 19px; font-weight: 800; margin: 8px 0; }
+.muted { color: var(--ink-2); font-size: 13px; }
+.note { font-size: 12px; color: var(--ink-3); margin-top: 8px; line-height: 1.55; }
+.badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1.5px 9px; border-radius: 999px; font-family: var(--sans); }
+.b-red { background: var(--danger-soft); color: var(--danger); border: 1px solid #fecaca; }
+.b-yel { background: var(--warn-soft); color: var(--warn); border: 1px solid #fde68a; }
+.b-ok { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); }
+
+/* 表格（biohub 风格：stone-50 表头 + 行分隔） */
+table.tb { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.tb th, table.tb td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+table.tb th { font-size: 11.5px; color: var(--ink-2); font-weight: 600; background: #f5f5f4; }
+table.tb tr:last-child td { border-bottom: none; }
+details { margin-top: 10px; }
+summary { font-size: 13px; color: var(--accent); cursor: pointer; user-select: none; font-weight: 600; }
+details[open] summary { margin-bottom: 8px; }
+.btn-mini { font-size: 12.5px; font-weight: 600; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; transition: all .15s; }
+.btn-mini:hover { border-color: var(--accent); color: var(--accent); }
+.btn-mini:active { transform: translateY(1px); }
+.btn-mini.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-mini.primary:hover { background: #065f46; color: #fff; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kpi { background: #f5f5f4; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.kpi .kv { font-size: 22px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.kpi .kl { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-weight: 600; letter-spacing: .04em; }
+.chart-box { position: relative; margin-top: 12px; background: #fcfcfb; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.chart-box svg { display: block; width: 100%; height: auto; }
+.chart-title { font-size: 11.5px; color: var(--ink-3); font-weight: 600; letter-spacing: .04em; margin-top: 12px; }
+.err { color: #b91c1c; font-size: 12.5px; margin-top: 6px; }
+
+/* 推进方案时间线 */
+.pitem { display: flex; gap: 12px; border-left: 3px solid var(--line); padding: 10px 14px; margin: 9px 0; border-radius: 0 10px 10px 0; background: #fafaf9; transition: background .15s, transform .15s; }
+.pitem:hover { transform: translateX(3px); background: #f5f5f4; }
+.pitem.lv-red { border-left-color: var(--danger); background: var(--danger-soft); }
+.pitem.lv-yel { border-left-color: var(--warn); background: var(--warn-soft); }
+.pdate { flex: 0 0 48px; font-weight: 700; font-size: 13px; color: var(--accent); padding-top: 2px; font-family: var(--mono); }
+.ptitle { font-size: 14.5px; font-weight: 700; margin-bottom: 3px; }
+.pwhy { font-size: 12.5px; color: var(--ink-2); }
+.planmeta { font-size: 12px; color: var(--ink-3); margin-top: 10px; }
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+
+/* 月历 */
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-title { font-size: 15px; font-weight: 800; }
+.cal-nav { display: flex; gap: 6px; }
+.cal-nav button { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 15px; cursor: pointer; transition: all .15s; }
+.cal-nav button:hover { border-color: var(--accent); color: var(--accent); }
+.cal-nav button:active { transform: translateY(1px); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-wd { font-size: 11px; color: var(--ink-3); text-align: center; padding: 4px 0; font-weight: 600; }
+.cal-cell { min-height: 62px; border-radius: 10px; background: #fcfcfb; border: 1px solid transparent; padding: 4px 5px; font-size: 11px; transition: all .15s; }
+.cal-cell:hover { border-color: var(--accent-line); background: var(--accent-soft); }
+.cal-cell.dim { opacity: .32; }
+.cal-cell .dnum { font-weight: 700; font-size: 12px; }
+.cal-cell.today { border: 2px solid var(--accent); background: var(--accent-soft); }
+.cal-cell .tags { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 3px; }
+.ctag { border-radius: 5px; padding: 1px 5px; font-size: 9.5px; font-weight: 700; color: #fff; line-height: 1.4; }
+.ct-frost{background:var(--info);} .ct-brown{background:var(--danger);} .ct-scab{background:var(--violet);}
+.ct-leafcurl{background:#5C8A3A;} .ct-harvest{background:var(--harvest);} .ct-dry{background:var(--warn);} .ct-rain{background:#5E8CA8;}
+.monthbar { display: flex; gap: 3px; align-items: flex-end; height: 62px; margin: 10px 0 4px; }
+.mb-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; border-radius: 8px; padding: 4px 0; transition: background .15s; }
+.mb-col:hover { background: var(--accent-soft); }
+.mb-col .bar { width: 58%; border-radius: 4px 4px 0 0; background: var(--line); min-height: 4px; transition: background .15s; }
+.mb-col.on .bar { background: var(--accent); }
+.mb-col .ml { font-size: 10.5px; color: var(--ink-3); }
+.mb-col.on .ml { color: var(--accent); font-weight: 800; }
+.mb-col .cnt { font-size: 9px; color: var(--ink-3); }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; font-size: 11.5px; color: var(--ink-2); }
+.legend .li { display: inline-flex; align-items: center; gap: 5px; }
+.legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+/* Toast（biohub 同款） */
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(16px); background: var(--ink); color: #fff; font-size: 13px; padding: 9px 18px; border-radius: 999px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 80; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* howto 表 */
+.howto table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.howto th, .howto td { text-align: left; padding: 11px 13px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.howto th { font-size: 12px; color: var(--ink-2); font-weight: 600; background: #f5f5f4; }
+.howto td:first-child { font-weight: 600; white-space: nowrap; }
+.howto tr:last-child td { border-bottom: none; }
+
+/* 页脚 */
+footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18px; text-align: left; }
+.foot-inner { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.foot-inner p { font-size: 13px; color: var(--ink-3); max-width: 62ch; }
+
+/* 滚动显现 */
+.reveal { opacity: 0; transform: translateY(22px); }
+.js .reveal { transition: opacity .6s cubic-bezier(.16,1,.3,1), transform .6s cubic-bezier(.16,1,.3,1); }
+.js .reveal.seen { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .js .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .hero-bg { animation: none !important; }
+  html { scroll-behavior: auto; }
+}
+
+
+
+
+@media (max-width: 620px) {
+  /* 触控目标统一 >=44px（Apple HIG / WCAG 2.5.5） */
+  .btn { padding: 13px 22px; font-size: 15px; }
+  .btn-mini { padding: 12px 16px; font-size: 13.5px; }
+  .tool-row .refresh { padding: 11px 16px; font-size: 13px; }
+  .cal-nav button { width: 44px; height: 44px; font-size: 17px; }
+  .nav-links a { padding: 12px 11px; font-size: 13.5px; }
+  .chip { padding: 10px 14px; font-size: 13px; }
+  /* 排版紧凑化 */
+  .hero h1 { font-size: clamp(26px, 7vw, 34px); }
+  section { padding: 40px 0; }
+  .sec-head { margin-bottom: 22px; }
+  .card { padding: 18px 16px; }
+  .wrap { padding: 0 22px; }
+  .nav-inner { padding: 0 22px; }
+  .cal-cell { min-height: 58px; padding: 3px 4px; }
+  .cal-cell .dnum { font-size: 11.5px; }
+  .ctag { font-size: 9px; padding: 1px 4px; }
+  .big { font-size: 18px; }
+  /* 16 天网格：8 列 -> 4 列（每格约 80px，天气图标与毫米数不挤） */
+  .grid16, [style*="repeat(8,1fr)"] { grid-template-columns: repeat(4, 1fr) !important; }
+  /* 底部安全区（iPhone 手势条） */
+  body { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+  footer { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  /* 方案时间线：日期列收窄，正文让位 */
+  .pdate { flex-basis: 42px; font-size: 12px; }
+  .ptitle { font-size: 14px; }
+  /* 状态栏换行友好 */
+  .statusbar { gap: 8px; font-size: 12px; }
+  .tool-row select { max-width: 46vw; }
+}
+
+@media (max-width: 460px) { .stat-grid { grid-template-columns: 1fr; } .kpi-row { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 620px) {
+  /* 触控目标统一 >=44px（Apple HIG / WCAG 2.5.5） */
+  .btn { padding: 13px 22px; font-size: 15px; }
+  .btn-mini { padding: 12px 16px; font-size: 13.5px; }
+  .tool-row .refresh { padding: 11px 16px; font-size: 13px; }
+  .cal-nav button { width: 44px; height: 44px; font-size: 17px; }
+  .nav-links a { padding: 12px 11px; font-size: 13.5px; }
+  .chip { padding: 10px 14px; font-size: 13px; }
+  /* 排版紧凑化 */
+  .hero h1 { font-size: clamp(26px, 7vw, 34px); }
+  .hero-inner { padding: 38px 50px 34px; gap: 26px;  text-align: left; }
+  section { padding: 40px 0; }
+  .sec-head { margin-bottom: 22px; }
+  .card { padding: 18px 16px; }
+  .wrap { padding: 0 22px; }
+  .nav-inner { padding: 0 22px; }
+  .cal-cell { min-height: 58px; padding: 3px 4px; }
+  .cal-cell .dnum { font-size: 11.5px; }
+  .ctag { font-size: 9px; padding: 1px 4px; }
+  .big { font-size: 18px; }
+  /* 16 天网格：8 列 -> 4 列（每格约 80px，天气图标与毫米数不挤） */
+  .grid16, [style*="repeat(8,1fr)"] { grid-template-columns: repeat(4, 1fr) !important; }
+  /* 底部安全区（iPhone 手势条） */
+  body { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+  footer { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  /* 方案时间线：日期列收窄，正文让位 */
+  .pdate { flex-basis: 42px; font-size: 12px; }
+  .ptitle { font-size: 14px; }
+  /* 状态栏换行友好 */
+  .statusbar { gap: 8px; font-size: 12px; }
+  .tool-row select { max-width: 46vw; }
+}
+@media (max-width: 460px) { .stat-grid { grid-template-columns: 1fr; } .kpi-row { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="#top" aria-label="桃园农事气象助手 首页">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <rect x="1" y="1" width="24" height="24" rx="7" fill="#047857"/>
+        <circle cx="13" cy="14.5" r="6.2" fill="#a7f3d0"/>
+        <path d="M13 8.3c.8-2.4 3-3.6 5-3.3-.3 2.3-2.2 4.2-5 3.3z" fill="#fff"/>
+      </svg>
+      桃园农事助手
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="打开菜单" aria-expanded="false" aria-controls="navDrawer">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="navLinks">
+      <a href="#plan">推进方案</a>
+      <a href="#calendar">农事月历</a>
+      <a href="#frost">冻害</a>
+      <a href="#chill">需冷量</a>
+      <a href="#harvest">采收</a>
+      <a href="#disease">病害</a>
+      <a href="#howto">说明</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="wrap hero-inner">
+    <div>
+      <h1>桃树管理<span class="accent">该做什么、什么时候做</span>，打开就能看</h1>
+      <p class="sub">开花怕冻、采收赶行情、打药赶时机——本助手把平谷的气象数据换算成具体的农事日子：哪天可能有霜冻要提前熏烟，各品种桃子大概哪几天成熟，未来哪些天容易发病。上方选择您的村子，往下看安排。</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#plan">查看农事安排</a>
+        <a class="btn btn-ghost" href="#calendar">打开农事月历</a>
+      </div>
+    </div>
+    <div class="hero-tool" aria-label="今日速览，实时数据">
+      <div class="tool-head">
+        <span class="t">您家桃园 · 今日速览</span>
+        <span class="s" id="fresh">数据加载中…</span>
+      </div>
+      <div class="tool-row">
+        <span>📍</span>
+        <select id="loc" aria-label="选择地点"></select>
+        <button class="refresh" onclick="refreshAll(true)">↻ 刷新</button>
+        <span class="mono" id="cd" style="margin-left:auto;font-size:11.5px;color:var(--ink-3)"></span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-cell"><div class="k">花期预估</div><div class="v" id="h-bloom">–</div><div class="s" id="h-bloom-s">按冬春积温推算</div></div>
+        <div class="stat-cell"><div class="k">最近采收品种</div><div class="v" id="h-harvest">–</div><div class="s" id="h-harvest-s">早熟品种最先</div></div>
+        <div class="stat-cell"><div class="k">未来 16 天关注日</div><div class="v" id="h-risk">–</div><div class="s">霜冻和发病天气</div></div>
+        <div class="stat-cell"><div class="k">休眠期低温累计</div><div class="v" id="h-chill">–</div><div class="s">0–7.2℃ 小时累计</div></div>
+      </div>
+      <p class="tool-note">请先在上方选择您所在的乡镇，各项日期均按当地气象数据计算。气象为模式推算数据，重大天气过程请以气象部门官方发布为准。</p>
+    </div>
+  </div>
+</header>
+
+<div class="nav-backdrop" id="navBackdrop" aria-hidden="true"></div>
+<aside class="nav-drawer" id="navDrawer" aria-hidden="true" aria-label="站内导航菜单">
+  <div class="drawer-head">
+    <span class="drawer-title">导航菜单</span>
+    <button class="drawer-close" id="navClose" aria-label="关闭菜单">✕</button>
+  </div>
+  <a href="#plan">🧭 推进方案</a>
+  <a href="#calendar">🗓 农事月历</a>
+  <a href="#frost">❄️ 花期防冻</a>
+  <a href="#chill">😴 休眠监测</a>
+  <a href="#harvest">📅 采收窗口</a>
+  <a href="#disease">🦠 病害风险</a>
+  <a href="#howto">ℹ️ 使用说明</a>
+  <div class="drawer-foot">桃园农事气象助手</div>
+</aside>
+
+
+<main class="wrap">
+
+  <!-- ============ 推进方案 ============ -->
+  <section id="plan">
+    <div class="sec-head reveal">
+      <h2>本期农事推进方案</h2>
+      <p>根据当前气象数据，为您排出了近期桃园的农事安排：红色为紧急事项，黄色建议提前准备，绿色供提前知晓。每条均可展开查看具体做法，也可一键复制转发。</p>
+    </div>
+    <div class="card reveal">
+      <div id="plan-body"><p class="muted">正在根据所选乡镇的气象数据生成安排…</p></div>
+      <div class="planmeta" id="plan-meta"></div>
+      <div class="toolbar"><button class="btn-mini primary" onclick="copyPlan()">📋 复制文字版（可直接粘贴到微信）</button></div>
+    </div>
+  </section>
+
+  <!-- ============ 农事月历 ============ -->
+  <section id="calendar">
+    <div class="sec-head reveal">
+      <h2>农事月历</h2>
+      <p>一整个月的农事日子贴在一本月历上：哪个日子标了「采」就是哪天能采桃，标了「褐」「疮」的天要注意防病，标了「冻」的天夜里要防霜。上面一排小柱子是每个月忙闲程度，点一下就能翻到那个月。</p>
+    </div>
+    <div class="bento">
+      <div class="card span-8 reveal">
+        <div class="cal-head">
+          <div class="cal-title" id="cal-title"></div>
+          <div class="cal-nav">
+            <button onclick="calMove(-1)" aria-label="上月">‹</button>
+            <button onclick="calToday()" aria-label="本月">今</button>
+            <button onclick="calMove(1)" aria-label="下月">›</button>
+          </div>
+        </div>
+        <div class="monthbar" id="monthbar"></div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="legend">
+          <span class="li"><span class="sw" style="background:var(--info)"></span>冻害风险</span>
+          <span class="li"><span class="sw" style="background:var(--danger)"></span>褐腐病</span>
+          <span class="li"><span class="sw" style="background:var(--violet)"></span>疮痂病</span>
+          <span class="li"><span class="sw" style="background:#5C8A3A"></span>缩叶病</span>
+          <span class="li"><span class="sw" style="background:var(--harvest)"></span>采收</span>
+          <span class="li"><span class="sw" style="background:#5E8CA8"></span>降雨日</span>
+          <span class="li"><span class="sw" style="background:var(--warn)"></span>连续干旱</span>
+        </div>
+        <details><summary>这本月历怎么看</summary><p class="note">点左右箭头或月份小柱子翻月。带「采:品种名」的日期是按往年规律推的成熟日子，供安排人手和联系买主参考；「冻」「褐」「疮」等天气类标签只显示未来 16 天（天气预报的范围）。今天用绿框标出。</p></details>
+      </div>
+      <div class="card span-4 reveal">
+        <h3><span class="ic">📊</span>这个月有几件事</h3>
+        <div class="tool-body">
+          <div class="kpi-row">
+            <div class="kpi"><div class="kv" id="k-frost">–</div><div class="kl">冻害风险日</div></div>
+            <div class="kpi"><div class="kv" id="k-disease">–</div><div class="kl">病害风险日</div></div>
+            <div class="kpi"><div class="kv" id="k-harvest">–</div><div class="kl">采收节点</div></div>
+            <div class="kpi"><div class="kv" id="k-rain">–</div><div class="kl">降雨日</div></div>
+          </div>
+          <div class="chart-title">未来 16 天 · 风险与降水</div>
+          <div class="chart-box" id="chart-risk"></div>
+          <p class="note" id="chart-note"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 四模块 ============ -->
+  <section id="frost">
+    <div class="sec-head reveal">
+      <h2>四个决策模块</h2>
+      <p>下面四张卡对应桃园一年的四件大事：春天防冻花、冬天看桃树睡没睡够、夏秋排采收、全程防病害。每张卡都直接给结论和建议动作，依据收在「展开」里，想深究再点开。</p>
+    </div>
+    <div class="bento">
+      <div class="card span-7 reveal" id="f1-card">
+        <h3><span class="ic">❄️</span>花期防冻 <span class="tagline">开花怕冻，提前几天就知道</span></h3>
+        <div class="tool-body" id="f1-body"><p class="muted">正在计算…</p></div>
+        <div class="chart-title">未来 16 天最低温走势（虚线 = 当前阶段 T10）</div>
+        <div class="chart-box" id="chart-f1"></div>
+        <details>
+          <summary>看看前几年冻过多少天</summary>
+          <div id="f1-replay"><button class="btn-mini" onclick="loadReplay()">调出前三年春天</button></div>
+        </details>
+        <details>
+          <summary>冻到什么程度会伤花（科学依据）</summary>
+          <table class="tb" id="f1-table"></table>
+          <p class="note">数字意思：T10 = 这个温度下约一成花会受冻，T90 = 约九成花受冻。数据来自美国果树产区试验和我国湖北农业部门的防冻指引，比我国口径略宽松，助手取两者中更谨慎的一条来提醒您。各地桃花抗寒力有差异，请结合自家园子情况灵活掌握。</p>
+        </details>
+      </div>
+      <div class="card span-5 reveal" id="chill">
+        <h3><span class="ic">😴</span>休眠期低温监测 <span class="tagline">关系春季萌芽整齐度</span></h3>
+        <div class="tool-body" id="f2-body"><p class="muted">正在计算…</p></div>
+        <div class="chart-title">各月需冷量分布（小时）</div>
+        <div class="chart-box" id="chart-f2"></div>
+        <p class="note">桃树冬天要攒够低温时间才肯整齐发芽（叫「需冷量」）。多数品种要 700–1200 小时。个别品种（早凤王、庆丰、中油蟠 9 号）暂无公开数字，显示「暂无公开数据」。</p>
+      </div>
+      <div class="card span-6 reveal" id="harvest">
+        <h3><span class="ic">📅</span>桃子哪几天能采 <span class="tagline">按品种一个个看</span></h3>
+        <div class="tool-body">
+          <div class="field" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <label class="muted" for="variety">品种：</label>
+            <select id="variety" class="in" style="font-size:13.5px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fcfcfb;" onchange="renderF3()"></select>
+            <span class="muted" id="variety-note"></span>
+          </div>
+          <div id="f3-body" style="margin-top:10px;"></div>
+          <p class="note" id="f3-note"></p>
+        </div>
+        <div class="chart-title">各品种桃子的采摘日历（每个品种一小条）</div>
+        <div class="chart-box" id="chart-f3"></div>
+      </div>
+      <div class="card span-6 reveal" id="disease">
+        <h3><span class="ic">🦠</span>哪几天要防病 <span class="tagline">看天安排打药</span></h3>
+        <div class="tool-body" id="f4-body"><p class="muted">正在计算…</p></div>
+        <details>
+          <summary>什么天气容易生什么病</summary>
+          <table class="tb">
+            <tr><th>病害</th><th>风险日判定</th><th>依据</th></tr>
+            <tr><td>褐腐病</td><td class="mono">日均温≥13℃ 且（有雨或湿度≥85%）</td><td>PNW 手册：&gt;12.8℃+24h 湿润可侵染</td></tr>
+            <tr><td>缩叶病</td><td class="mono">芽期（盛花前）10–21℃ 且（有雨或湿度≥90%）</td><td>MSU/甘肃农技</td></tr>
+            <tr><td>疮痂病</td><td class="mono">日均温≥16℃ 且（有雨或湿度≥90%）</td><td>Texas A&amp;M：&gt;16℃ 高湿产孢</td></tr>
+          </table>
+          <p class="note">标出来的日子意思是「这种天气病菌容易侵染」，请提前一两天做准备；具体打什么药、怎么打，请听科技小院和植保站的。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 工作原理 ============ -->
+  <section id="howto">
+    <div class="sec-head reveal">
+      <h2>这本助手是怎么算出来的</h2>
+      <p>助手不含任何收费项目：气象数据取自公开的 Open-Meteo 服务（免费、不用注册），全部计算在您手机或电脑上完成，不收集任何信息。可以离线保存页面，联网时自动更新数据。</p>
+    </div>
+    <div class="card howto reveal">
+      <table>
+        <tr><th>模块</th><th>输入（开放数据）</th><th>计算</th><th>输出</th></tr>
+        <tr><td>推进方案</td><td>下面四路结果</td><td>规则引擎合成：按日期排序、去重、定优先级</td><td>行动清单（可复制分享）</td></tr>
+        <tr><td>农事月历</td><td>16 天预报 + 采收推算</td><td>日期→事件标签映射，跨月翻页</td><td>整月视图 + 月度统计</td></tr>
+        <tr><td>冻害预警</td><td>16 天预报 + 历史积温</td><td>物候阶段 × 临界温度表比对</td><td>红/黄/绿灯 + 防灾动作</td></tr>
+        <tr><td>需冷量</td><td>11 月起小时级温度</td><td>0–7.2℃ 小时累计 vs 品种需求</td><td>休眠满足度 + 暖冬预警</td></tr>
+        <tr><td>采收窗口</td><td>盛花估算 + 品种发育期 + 降雨预报</td><td>盛花 + DAFB，叠加晴雨窗</td><td>窗口日期 + 抢晴建议</td></tr>
+        <tr><td>病害风险</td><td>预报温湿雨</td><td>三种病害侵染气象条件判定</td><td>逐日风险色块 + 用药窗口提示</td></tr>
+      </table>
+      <p class="note">
+        数据源：Open-Meteo（免费开放、免注册）。限制：再分析数据极端低温可能有 1–2℃ 偏差；物候与病害阈值为文献通用口径，正式使用前建议结合科技小院实地观测校准；早凤王、庆丰、中油蟠 9 号需冷量无公开数值，界面显示"暂无公开数据"不虚构。
+      </p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-inner">
+    <p>开发：彭宇程 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style="color:var(--ink-3)">（版本 v3.4）</span></p>
+    <div class="links">
+      <a href="#plan">推进方案</a>
+      <a href="#calendar">月历</a>
+      <a href="#howto">说明</a>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+document.documentElement.classList.add("js");
+/* ================= 参数区（给维护者：改这里即可，界面不受影响） ================= */
+const AUTO_MIN = 30, BLOOM_GDD = 200, TZ = "Asia/Shanghai";
+const LOCATIONS = [
+  ["平谷城区（滨河/兴谷街道）", 40.17, 117.12],
+  ["大华山镇（大桃核心产区）", 40.21, 117.09],
+  ["刘家店镇（蟠桃之乡）", 40.22, 117.05],
+  ["峪口镇·西樊各庄村", 40.15, 117.06],
+  ["王辛庄镇", 40.18, 117.09],
+  ["山东庄镇", 40.16, 117.15],
+  ["南独乐河镇", 40.15, 117.18],
+  ["金海湖镇", 40.13, 117.22],
+  ["镇罗营镇（北部山区）", 40.24, 117.14],
+  ["黄松峪乡（东北山区）", 40.20, 117.21],
+];
+const STAGES = [
+  {name:"现蕾初期", t10:-7.8, t90:-17.2, gdd:20},
+  {name:"现蕾（萼绿）", t10:-6.1, t90:-15.0, gdd:60},
+  {name:"露瓣前（萼红）", t10:-5.0, t90:-12.8, gdd:100},
+  {name:"露瓣", t10:-3.9, t90:-9.4, gdd:140},
+  {name:"初花", t10:-3.3, t90:-6.1, gdd:170},
+  {name:"盛花", t10:-2.8, t90:-4.4, gdd:200},
+  {name:"幼果初期", t10:-2.2, t90:-3.9, gdd:260},
+];
+const VARIETIES = [
+  ["晚蜜", 165, "北京 9 月底（北京市农林科学院）"],
+  ["瑞蟠4号", 135, "8 月 15 日（郑州口径）"],
+  ["大久保", 120, "8 月中旬（平谷上市月历）"],
+  ["红珊瑚", 100, "8 月中旬"],
+  ["中油蟠9号", 100, "公开口径 90–110 天，取中值"],
+  ["中油蟠2号", 90, "郑州口径"],
+  ["瑞光5号", 85, "北京 7 月 8–15 日"],
+  ["中油4号", 74, "郑州口径"],
+  ["中油5号", 72, "郑州口径"],
+  ["早凤王", 75, "7 月中旬（辽南口径）"],
+  ["早露蟠桃", 67, "早熟蟠桃"],
+];
+/* ================= 结束参数区 ================= */
+
+const $ = id => document.getElementById(id);
+const G = { fc:null, idxToday:-1, today:null, gddMap:null, bloom:null, loc:0, calY:0, calM:0, events:{} };
+const CACHE_VER = "v6", CACHE_TTL = 3600 * 1000;
+function cacheGet(k, allowStale){
+  try{
+    const r=localStorage.getItem("om:"+CACHE_VER+":"+k);
+    if(!r) return null;
+    const o=JSON.parse(r);
+    if(Date.now()-o.t<=CACHE_TTL) return o.v;
+    return allowStale?o.v:null;      /* 过期缓存：正常不用，失败时救急 */
+  }catch(e){ return null; }
+}
+function cacheSet(k,v){ try{ localStorage.setItem("om:"+CACHE_VER+":"+k, JSON.stringify({t:Date.now(),v})); }catch(e){} }
+async function fetchJSON(url, key, force){
+  const k = key||url;
+  if(!force){ const c=cacheGet(k); if(c) return c; }
+  let lastErr=null;
+  for(let attempt=1; attempt<=3; attempt++){
+    try{
+      const r = await fetch(url);
+      if(!r.ok){
+        let rs="HTTP "+r.status;
+        try{ const j=await r.json(); if(j.reason) rs+=" "+j.reason; }catch(e){}
+        throw new Error(rs);
+      }
+      const j = await r.json();
+      if(j.error) throw new Error(j.reason||"接口返回异常");
+      cacheSet(k, j);
+      return j;
+    }catch(e){
+      lastErr=e;
+      if(attempt<3) await new Promise(res=>setTimeout(res, 1200*attempt));
+    }
+  }
+  const stale=cacheGet(k, true);
+  if(stale){ stale.__stale=true; return stale; }
+  throw lastErr||new Error("网络连接失败");
+}
+const loc = () => LOCATIONS[G.loc];
+const fcURL = () => "https://api.open-meteo.com/v1/forecast?latitude="+loc()[1]+"&longitude="+loc()[2]+
+  "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,wind_speed_10m_max"+
+  "&past_days=92&forecast_days=16&timezone="+encodeURIComponent(TZ);
+const arcDailyURL = (a,b) => "https://archive-api.open-meteo.com/v1/archive?latitude="+loc()[1]+"&longitude="+loc()[2]+
+  "&start_date="+a+"&end_date="+b+"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone="+encodeURIComponent(TZ);
+const arcHourlyURL = (a,b) => "https://archive-api.open-meteo.com/v1/archive?latitude="+loc()[1]+"&longitude="+loc()[2]+
+  "&start_date="+a+"&end_date="+b+"&hourly=temperature_2m&timezone="+encodeURIComponent(TZ);
+
+function gddSeries(dates, tmax, tmin, base){
+  let s=0; const out={};
+  for(let i=0;i<dates.length;i++){ const tx=tmax[i],tn=tmin[i];
+    if(tx!=null&&tn!=null) s+=Math.max(0,(tx+tn)/2-base); out[dates[i]]=s; }
+  return out;
+}
+function stageOf(gdd){ let st=STAGES[0]; for(const s of STAGES){ if(gdd>=s.gdd) st=s; } return st; }
+function fmtDate(iso){ return iso.slice(5).replace("-","/"); }
+const todayISO = () => new Date().toLocaleDateString("sv-SE");
+function pad(n){ return (n<10?"0":"")+n; }
+let toastTimer=null;
+function showToast(msg){
+  const t=$("toast"); if(!t) return;
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1600);
+}
+
+/* ---------- 主流程 ---------- */
+async function refreshAll(force){
+  try{
+    $("fresh").textContent = "正在取天气…";
+    const fc = await fetchJSON(fcURL(), "fc108:"+G.loc, force);
+    G.fc = fc;
+    if(fc.__stale) showToast("当前网络不畅，先为您显示最近一次成功获取的数据");
+    const tAll = fc.daily.time;
+    G.idxToday = tAll.indexOf(todayISO()); if(G.idxToday<0) G.idxToday = tAll.length-1;
+    G.today = tAll[G.idxToday];
+    $("fresh").textContent = "已更新到 "+new Date().toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
+    cdLeft = AUTO_MIN*60;
+    const year = G.today.slice(0,4);
+    const lag = new Date(G.today); lag.setDate(lag.getDate()-6);
+    const lagS = lag.toLocaleDateString("sv-SE");
+    const arc = await fetchJSON(arcDailyURL(year+"-01-01", lagS), "arcm"+lagS+":"+G.loc, force);
+    const gdd = gddSeries(arc.daily.time, arc.daily.temperature_2m_max, arc.daily.temperature_2m_min, 4.5);
+    for(let i=0;i<=G.idxToday;i++){
+      const d=tAll[i];
+      if(d>lagS && gdd[d]===undefined){
+        const tx=fc.daily.temperature_2m_max[i], tn2=fc.daily.temperature_2m_min[i];
+        gdd[d]=(i>0?gdd[tAll[i-1]]:0)+(tx!=null&&tn2!=null?Math.max(0,(tx+tn2)/2-4.5):0);
+      }
+    }
+    G.gddMap = gdd;
+    G.bloom = null;
+    for(const d of arc.daily.time){ if(d>=year+"-02-01" && gdd[d]>=BLOOM_GDD){ G.bloom=d; break; } }
+    buildEvents();
+    renderF1(); renderF4(); renderF3(); renderCal(); updateHero();
+    renderF2(force).catch(e=>{ $("f2-body").innerHTML='<p class="err">今冬气温数据暂时无法获取，请稍后点击「刷新」重试。</p>'; });
+    renderPlan();
+  }catch(e){
+    $("fresh").innerHTML = '<span class="err">暂时无法获取气象数据，请检查网络后点击「刷新」重试</span>';
+    showToast("气象数据暂时无法获取，正在为您重试或显示最近一次数据");
+  }
+}
+function updateHero(){
+  $("h-bloom").textContent = G.bloom ? fmtDate(G.bloom) : "–";
+  const gddNow = G.gddMap ? Math.round(G.gddMap[G.today]||0) : null;
+  $("h-bloom-s").textContent = gddNow!=null ? "GDD4.5 已累计 "+gddNow : "积温模型推算";
+  let hv="–", hs="按品种发育期";
+  if(G.bloom){
+    let best=null;
+    for(const v of VARIETIES){
+      const hd=new Date(G.bloom); hd.setDate(hd.getDate()+v[1]);
+      const left=Math.round((hd-new Date(G.today))/86400000);
+      if(left>=-7 && (!best || left<best.left)) best={left, v, hd};
+    }
+    if(best){ hv=best.v[0]+" "+fmtDate(best.hd.toLocaleDateString("sv-SE")); hs=best.left>=0?("距今 "+best.left+" 天"):"窗口进行中"; }
+  }
+  $("h-harvest").textContent=hv; $("h-harvest-s").textContent=hs;
+  let risk=0;
+  if(G.events){
+    for(let i=G.idxToday;i<G.fc.daily.time.length&&i<G.idxToday+16;i++){
+      const iso=G.fc.daily.time[i];
+      for(const e of (G.events[iso]||[])) if(e.k==="frost"||e.k==="brown"||e.k==="scab"||e.k==="leafcurl") risk++;
+    }
+  }
+  $("h-risk").textContent=risk?risk+" 天":"0 天";
+  $("h-risk").innerHTML = risk ? risk+' <span style="font-size:12px;color:var(--warn)">天</span>' : '0 <span style="font-size:12px;color:var(--accent)">天</span>';
+  const m=new Date().getMonth()+1;
+  if(m<=3||m>=11) $("h-chill").textContent="计算中";
+  else $("h-chill").textContent=window.__chill!=null?(window.__chill+" h"):"见下方";
+}
+
+/* ---------- 事件总线 ---------- */
+function buildEvents(){
+  const E = {}; const add=(date,tag)=>{ (E[date]=E[date]||[]).push(tag); };
+  const d=G.fc.daily, t=d.time, month=Number(G.today.slice(5,7));
+  const inPhase = month>=2 && month<=5;
+  const st = stageOf(G.gddMap?(G.gddMap[G.today]||0):0);
+  for(let i=G.idxToday;i<t.length&&i<G.idxToday+16;i++){
+    const date=t[i], tx=d.temperature_2m_max[i], tn=d.temperature_2m_min[i],
+          p=d.precipitation_sum[i], h=d.relative_humidity_2m_mean[i];
+    if(tx==null||tn==null) continue;
+    const tm=(tx+tn)/2;
+    const wet=(p!=null&&p>=0.1)||(h!=null&&h>=85);
+    const wetHi=(p!=null&&p>=0.1)||(h!=null&&h>=90);
+    if(inPhase && tn<=st.t10) add(date,{k:"frost",cls:"ct-frost",label:"冻",tip:"预报最低 "+tn+"℃ ≤ T10("+st.t10+"℃)"});
+    if(month>=4&&month<=6&&tm>=13&&wet) add(date,{k:"brown",cls:"ct-brown",label:"褐",tip:"满足褐腐病侵染条件"});
+    if(month>=5&&month<=9&&tm>=16&&wetHi) add(date,{k:"scab",cls:"ct-scab",label:"疮",tip:"满足疮痂病侵染条件"});
+    if(month>=2&&month<=4&&!G.bloom&&tm>=10&&tm<=21&&wetHi) add(date,{k:"leafcurl",cls:"ct-leafcurl",label:"缩",tip:"芽期缩叶病风险"});
+    if(p!=null&&p>=1) add(date,{k:"rain",cls:"ct-rain",label:p.toFixed(0)+"mm",tip:"降水 "+p+"mm"});
+  }
+  if(G.bloom){
+    const bd=new Date(G.bloom);
+    for(const v of VARIETIES){
+      const hd=new Date(bd); hd.setDate(hd.getDate()+v[1]);
+      add(hd.toLocaleDateString("sv-SE"),{k:"harvest",cls:"ct-harvest",label:"采:"+v[0],tip:v[0]+" 估算采收窗口（盛花+"+v[1]+" 天）"});
+    }
+  }
+  let dry=0; const dryEnd=[];
+  for(let i=G.idxToday;i>=0;i--){ const p=d.precipitation_sum[i]; if(p!=null&&p>=1) break; dry++; dryEnd.push(t[i]); }
+  if(dry>=10) for(const date of dryEnd) add(date,{k:"dry",cls:"ct-dry",label:"旱",tip:"连续 "+dry+" 天无有效降水"});
+  G.events = E;
+}
+
+/* ---------- 推进方案 ---------- */
+function buildPlan(){
+  const A=[]; const d=G.fc.daily, t=d.time; const month=Number(G.today.slice(5,7));
+  if(month>=2&&month<=5&&G.gddMap){
+    const st=stageOf(G.gddMap[G.today]||0);
+    for(let i=G.idxToday+1;i<t.length;i++){
+      const tn=d.temperature_2m_min[i]; if(tn==null) continue;
+      if(tn<=st.t90) A.push({date:t[i],lv:"red",title:"今晚到明早：连续熏烟防冻！",why:"预报夜里有 "+tn+"℃，比 "+st.name+"期能冻坏九成花的温度（"+st.t90+"℃）还低",how:"天黑前在上风口堆柴草暗火冒浓烟（一亩地 4–10 堆），霜前给园子灌一遍水，树下喷水；冻后第二天摘掉冻死的花果、补喷一次杀菌剂，晚点疏果、准备好授粉"});
+      else if(tn<=st.t10) A.push({date:t[i],lv:"yel",title:"后天起有霜冻：提前一天准备",why:"预报夜里有 "+tn+"℃，比 "+st.name+"期开始伤花的温度（"+st.t10+"℃）还低",how:"先把柴草运到园子上风口码好；头天傍晚给园子灌水；可喷 0.2–0.3% 硼砂水或防冻剂，花抗冻一些"});
+    }
+  }
+  let lastD=null;
+  for(let i=G.idxToday+1;i<t.length;i++){
+    const tx=d.temperature_2m_max[i],tn=d.temperature_2m_min[i],p=d.precipitation_sum[i],h=d.relative_humidity_2m_mean[i];
+    if(tx==null||tn==null) continue;
+    const tm=(tx+tn)/2;
+    const wet=(p!=null&&p>=0.1)||(h!=null&&h>=85);
+    const wetHi=(p!=null&&p>=0.1)||(h!=null&&h>=90);
+    if(month>=4&&month<=6&&tm>=13&&wet&&lastD!==t[i]){ A.push({date:t[i],lv:"yel",title:"这几天花和桃容易得褐腐病",why:"温暖又潮湿的天气，褐腐病最容易传上花和果实",how:"提前 1–2 天打一遍保护性杀菌剂；下过雨再查一遍、该补就补；用什么药听科技小院和植保站的"}); lastD=t[i]; }
+    if(month>=5&&month<=9&&tm>=16&&wetHi&&lastD!==t[i]){ A.push({date:t[i],lv:"yel",title:"这几天小桃容易得疮痂病",why:"高温高湿天气，疮痂病最容易上幼果",how:"落花后到采前一个半月是关键，提前 1–2 天打保护剂；用什么药听科技小院和植保站的"}); lastD=t[i]; }
+  }
+  if(G.bloom){
+    const bd=new Date(G.bloom);
+    for(const v of VARIETIES){
+      const hd=new Date(bd); hd.setDate(hd.getDate()+v[1]);
+      const left=Math.round((hd-new Date(G.today))/86400000);
+      const w=hd.toLocaleDateString("sv-SE");
+      if(left>=0&&left<=30){
+        if(left<=3) A.push({date:G.today,lv:"red",title:v[0]+"该摘了！",why:"今年大约 "+fmtDate(w)+" 前后成熟（还剩 "+left+" 天）",how:"按桃子成熟度分批摘；盯着天气预报挑晴天摘；提前把纸箱/礼盒和买家联系好"});
+        else if(left<=10) A.push({date:G.today,lv:"yel",title:v[0]+"快熟了，开始准备",why:"预计 "+fmtDate(w)+" 前后能采（还剩 "+left+" 天）",how:"叫好人手、备好筐和包装、联系电商或客商；看这周哪天晴就定哪天摘"});
+        else A.push({date:G.today,lv:"ok",title:v[0]+"还有约 "+left+" 天采",why:"预计 "+fmtDate(w)+" 前后成熟",how:"正常管理，到临近时这里会提醒你"});
+      }
+    }
+  }
+  if(month>=4&&month<=9){
+    let dry=0;
+    for(let i=G.idxToday;i>=0;i--){ const p=d.precipitation_sum[i]; if(p!=null&&p>=1) break; dry++; }
+    if(dry>=10) A.push({date:G.today,lv:"yel",title:"桃园有点旱了",why:"已经 "+dry+" 天没下过像样的雨（一次 1mm 以上）",how:"扒开土看看墒情；桃子正长个儿的时候最缺水，早晚凉快时浇，别中午浇"});
+  }
+  if(month>=11||month<=2) A.push({date:G.today,lv:"ok",title:"冬天：留意桃树睡了多久",why:"冬天攒低温的天数，决定春天开花齐不齐",how:"到 2 月底还差得多的年份，春天开花会乱，提前备好人工授粉的花粉和工具"});
+  A.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.lv==="red"?-1:b.lv==="red"?1:0));
+  return A;
+}
+function renderPlan(){
+  const items=buildPlan(); const body=$("plan-body");
+  if(!items.length){
+    body.innerHTML='<p class="big"><span class="light l-ok"></span>近期无紧急农事事项</p><p class="muted">按平常节奏管理就行。气象数据更新后，安排会自动调整。</p>';
+    $("plan-meta").textContent=""; return;
+  }
+  const LVN={red:"当急",yel:"提前准备",ok:"心里有数"};
+  body.innerHTML=items.map(a=>'<div class="pitem lv-'+a.lv+'"><div class="pdate">'+fmtDate(a.date)+'</div><div><div class="ptitle"><span class="badge b-'+a.lv+'">'+LVN[a.lv]+"</span>"+a.title+'</div><div class="pwhy">'+a.why+"</div>"+'<details><summary>怎么做</summary><div class="pwhy">'+a.how+"</div></details></div></div>").join("");
+  const nr=items.filter(x=>x.lv==="red").length, ny=items.filter(x=>x.lv==="yel").length;
+  $("plan-meta").textContent="共 "+items.length+" 项安排（紧急 "+nr+" · 建议准备 "+ny+" · 供知晓 "+(items.length-nr-ny)+"）· 生成于 "+new Date().toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})+" · 气象数据更新后自动调整";
+  window.__planText="桃园近期安排（"+LOCATIONS[G.loc][0]+"）\n"+items.map(a=>fmtDate(a.date)+" "+a.title+"\n  为什么："+a.why+"\n  怎么做："+a.how).join("\n")+"\n—— 来自桃园农事助手";
+}
+function copyPlan(){
+  const txt=window.__planText||""; if(!txt) return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>showToast("已复制，可粘贴到微信发送"),()=>fbCopy(txt));
+  }else fbCopy(txt);
+}
+function fbCopy(txt){
+  const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); showToast("方案文字已复制"); }catch(e){ showToast("复制失败，请手动选择文本"); }
+  document.body.removeChild(ta);
+}
+
+/* ---------- 月历 ---------- */
+function calMove(n){ G.calM+=n; while(G.calM<0){G.calM+=12;G.calY--;} while(G.calM>11){G.calM-=12;G.calY++;} renderCal(); }
+function calToday(){ const n=new Date(); G.calY=n.getFullYear(); G.calM=n.getMonth(); renderCal(); }
+function renderCal(){
+  if(!G.calY){ const n=new Date(); G.calY=n.getFullYear(); G.calM=n.getMonth(); }
+  const y=G.calY, m=G.calM;
+  $("cal-title").textContent = y+" 年 "+(m+1)+" 月";
+  const startWd=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
+  let html=""; for(const w of ["日","一","二","三","四","五","六"]) html+='<div class="cal-wd">'+w+"</div>";
+  for(let i=0;i<startWd;i++) html+='<div class="cal-cell dim"></div>';
+  const todayStr=todayISO();
+  for(let day=1;day<=dim;day++){
+    const iso=y+"-"+pad(m+1)+"-"+pad(day);
+    const evs=G.events[iso]||[];
+    const tags=evs.slice(0,3).map(e=>'<span class="ctag '+e.cls+'" title="'+e.tip+'">'+e.label+"</span>").join("")+
+               (evs.length>3?'<span class="muted" style="font-size:9px">+'+(evs.length-3)+"</span>":"");
+    html+='<div class="cal-cell'+(iso===todayStr?" today":"")+'" title="'+evs.map(e=>e.tip).join("；")+'"><div class="dnum">'+day+'</div><div class="tags">'+tags+"</div></div>";
+  }
+  const tail=(7-((startWd+dim)%7))%7;
+  for(let i=0;i<tail;i++) html+='<div class="cal-cell dim"></div>';
+  $("cal-grid").innerHTML=html;
+  let bar="";
+  const base=new Date();
+  for(let off=-2;off<=9;off++){
+    const dd=new Date(base.getFullYear(),base.getMonth()+off,1);
+    const yy=dd.getFullYear(), mm=dd.getMonth();
+    let cnt=0;
+    for(const iso in G.events){ if(iso.startsWith(yy+"-"+pad(mm+1))) cnt+=G.events[iso].length; }
+    const on=(yy===y&&mm===m)?" on":"";
+    const hgt=Math.min(44,8+cnt*6);
+    bar+='<div class="mb-col'+on+'" onclick="jumpMonth('+yy+','+mm+')" title="'+yy+"年"+(mm+1)+"月 "+cnt+" 条事件"+'"><div class="bar" style="height:'+hgt+'px"></div><div class="ml">'+(mm+1)+"月</div>"+(cnt?'<div class="cnt">'+cnt+"</div>":"")+"</div>";
+  }
+  $("monthbar").innerHTML=bar;
+  const pf=iso=>iso.startsWith(y+"-"+pad(m+1));
+  let frost=0,disease=0,harvest=0,rain=0;
+  for(const iso in G.events){ if(!pf(iso)) continue; for(const e of G.events[iso]){ if(e.k==="frost")frost++; else if(e.k==="harvest")harvest++; else if(e.k==="rain")rain++; else disease++; } }
+  $("k-frost").textContent=frost; $("k-disease").textContent=disease; $("k-harvest").textContent=harvest; $("k-rain").textContent=rain;
+  renderRiskChart();
+}
+function jumpMonth(y,m){ G.calY=y; G.calM=m; renderCal(); }
+
+/* ---------- 迷你图（纯 SVG，biohub 色系） ---------- */
+function renderRiskChart(){
+  if(!G.fc) return;
+  const d=G.fc.daily, t=d.time, rows=[];
+  for(let i=G.idxToday;i<t.length&&i<G.idxToday+16;i++){
+    const tx=d.temperature_2m_max[i],tn=d.temperature_2m_min[i],p=d.precipitation_sum[i],h=d.relative_humidity_2m_mean[i];
+    if(tx==null||tn==null) continue;
+    const tm=(tx+tn)/2, wet=(p!=null&&p>=0.1)||(h!=null&&h>=85), wetHi=(p!=null&&p>=0.1)||(h!=null&&h>=90);
+    rows.push({d:t[i], frost:(monthOf(t[i])>=2&&monthOf(t[i])<=5&&tn<=-2.8)?1:0,
+               brown:(tm>=13&&wet)?1:0, scab:(tm>=16&&wetHi)?1:0, rain:p||0});
+  }
+  if(!rows.length){ $("chart-risk").innerHTML=""; return; }
+  const W=360,H=120,padL=30,padB=18,cw=(W-padL-8)/rows.length;
+  const maxR=Math.max(1,...rows.map(r=>r.rain));
+  let s='<svg viewBox="0 0 '+W+" "+H+'" role="img" aria-label="未来16天风险与降水图">';
+  for(let g=0;g<=maxR;g+=Math.ceil(maxR/3)){
+    const gy=H-padB-(g/maxR)*(H-padB-16);
+    s+='<line x1="'+padL+'" y1="'+gy+'" x2="'+W+'" y2="'+gy+'" stroke="#e7e5e4" stroke-width="1"/><text x="2" y="'+(gy+3)+'" font-size="8.5" fill="#a8a29e">'+g+"</text>";
+  }
+  rows.forEach((r,i)=>{
+    const x=padL+i*cw+cw/2;
+    if(r.rain>0){ const bh=(r.rain/maxR)*(H-padB-16); s+='<rect x="'+(x-cw*0.28)+'" y="'+(H-padB-bh)+'" width="'+(cw*0.56)+'" height="'+bh+'" rx="2" fill="#5E8CA8" opacity=".5"><title>'+r.d+" 降水 "+r.rain+"mm</title></rect>"; }
+    let yy=14;
+    for(const [k,c] of [["frost","#4e7ca1"],["brown","#b91c1c"],["scab","#6d5bae"]]){
+      if(r[k]){ s+='<circle cx="'+x+'" cy="'+yy+'" r="4" fill="'+c+'"><title>'+r.d+" "+k+"</title></circle>"; yy+=11; }
+    }
+    if(i%2===0) s+='<text x="'+x+'" y="'+(H-5)+'" font-size="8" fill="#a8a29e" text-anchor="middle">'+r.d.slice(8)+"</text>";
+  });
+  s+="</svg>";
+  $("chart-risk").innerHTML=s;
+  $("chart-note").innerHTML="柱=降水（mm）；点=<span style='color:#4e7ca1'>■</span> 冻害 <span style='color:#b91c1c'>■</span> 褐腐 <span style='color:#6d5bae'>■</span> 疮痂 风险日";
+}
+function monthOf(iso){ return Number(iso.slice(5,7)); }
+
+function renderF1(){
+  const d=G.fc.daily; const month=monthOf(G.today); const body=$("f1-body");
+  if(month<2||month>5){
+    body.innerHTML='<p class="big"><span class="light l-ok"></span>现在不是开花季节，不用防冻</p><p class="muted">霜冻风险集中在 2–5 月桃树开花前后。想看往年这个时候冻过多少天，点开下面「看看前几年」。</p>';
+    $("chart-f1").innerHTML='<p class="muted" style="padding:20px;text-align:center">2–5 月花期窗口内显示最低温走势与 T10 阈值线</p>';
+  }else{
+    const st=stageOf(G.gddMap?(G.gddMap[G.today]||0):0);
+    let hits=[];
+    for(let i=G.idxToday+1;i<d.time.length;i++){ const tn=d.temperature_2m_min[i]; if(tn!=null&&tn<=st.t10) hits.push({d:d.time[i],tn}); }
+    const level=hits.some(h=>h.tn<=st.t90)?"red":hits.length?"yellow":"ok";
+    const light=level==="red"?"l-red":level==="yellow"?"l-yel":"l-ok";
+    const word=level==="red"?"预计出现严重霜冻，将影响大部分花器，请立即采取防冻措施":level==="yellow"?"预计出现霜冻，部分花器可能受冻，请提前做好防冻准备":"未来 16 天无影响花器的低温天气";
+    body.innerHTML='<p class="big"><span class="light '+light+'"></span>'+word+"</p>"+
+      '<p class="muted">桃树现在处于 <b>'+st.name+"</b> 阶段；这个阶段夜里到 "+st.t10+"℃ 就会开始伤花（到 "+st.t90+"℃ 大部分花保不住）</p>"+
+      (hits.length?'<ul style="padding-left:1.2em;font-size:13px;margin-top:6px">'+hits.map(h=>"<li>"+fmtDate(h.d)+" 最低温 "+h.tn+"℃</li>").join("")+"</ul>":"");
+    const t=d.time, tmin=d.temperature_2m_min, W=400,H=130,pl=34,pb=18,cw=(W-pl-10)/16;
+    let path="", pts="";
+    for(let i=G.idxToday;i<Math.min(G.idxToday+16,t.length);i++){
+      const v=tmin[i]; if(v==null) continue;
+      const x=pl+(i-G.idxToday)*cw+cw/2;
+      const y=16+Math.min(1,Math.max(0,(6-v)/16))*(H-pb-16);
+      path+=(path?" L":"M")+x.toFixed(1)+" "+y.toFixed(1);
+      pts+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.6" fill="#047857"><title>'+t[i]+" 最低温 "+v+"℃</title></circle>";
+    }
+    const ty=16+Math.min(1,Math.max(0,(6-st.t10)/16))*(H-pb-16);
+    let s='<svg viewBox="0 0 '+W+" "+H+'">';
+    s+='<line x1="'+pl+'" y1="'+ty.toFixed(1)+'" x2="'+(W-6)+'" y2="'+ty.toFixed(1)+'" stroke="#b91c1c" stroke-dasharray="4 3" stroke-width="1.2"/>';
+    s+='<text x="'+(W-6)+'" y="'+(ty-5).toFixed(1)+'" font-size="8.5" fill="#b91c1c" text-anchor="end">T10 '+st.t10+"℃</text>";
+    s+='<path d="'+path+'" fill="none" stroke="#047857" stroke-width="2"/>'+pts;
+    s+="</svg>";
+    $("chart-f1").innerHTML=s;
+  }
+  $("f1-table").innerHTML="<tr><th>物候阶段</th><th>T10(℃)</th><th>T90(℃)</th><th>中文口径(℃)</th></tr>"+
+    STAGES.map((s,i)=>{ const cn=["花蕾期 −1.7~−6.6","花蕾期 −1.7~−6.6","花蕾期 −1.7~−6.6","花蕾期 −1.7~−6.6","开花 −1~−2","开花 −1~−2","幼果 −1.1"][i];
+      return "<tr><td>"+s.name+"</td><td class='mono'>"+s.t10+"</td><td class='mono'>"+s.t90+"</td><td>"+cn+"</td></tr>"; }).join("");
+}
+async function loadReplay(){
+  const box=$("f1-replay"); box.innerHTML='<p class="muted">正在翻前几年的天气记录…</p>';
+  try{
+    const rows=[];
+    for(const y of ["2024","2025","2026"]){
+      const d=await fetchJSON(arcDailyURL(y+"-03-01",y+"-04-20"),"replay"+y+":"+G.loc,false);
+      const g=gddSeries(d.daily.time,d.daily.temperature_2m_max,d.daily.temperature_2m_min,4.5);
+      let bloom=null,warn=0,sev=0;
+      for(const day of d.daily.time){
+        if(!bloom&&day>=y+"-02-01"&&g[day]>=BLOOM_GDD) bloom=day;
+        const st=stageOf(g[day]);
+        const tn=d.daily.temperature_2m_min[d.daily.time.indexOf(day)];
+        if(tn!=null&&tn<=st.t10){ warn++; if(tn<=st.t90) sev++; }
+      }
+      rows.push("<tr><td class='mono'>"+y+"</td><td class='mono'>"+(bloom?fmtDate(bloom):"未达")+"</td><td class='mono'>"+warn+"</td><td class='mono'>"+sev+"</td></tr>");
+    }
+    box.innerHTML="<table class='tb'><tr><th>年份</th><th>那年开花大约在</th><th>险些受冻的天数</th><th>会严重受冻的天数</th></tr>"+rows.join("")+"</table>";
+  }catch(e){ box.innerHTML='<p class="err">往年数据暂时无法获取，请稍后重试。</p>'; }
+}
+async function renderF2(force){
+  const body=$("f2-body"); const now=new Date(); const m=now.getMonth()+1;
+  let start,end,label;
+  if(m>=11){ start=now.getFullYear()+"-11-01"; end=(now.getFullYear()+1)+"-03-31"; label="本休眠季"; }
+  else if(m<=3){ start=(now.getFullYear()-1)+"-11-01"; end=now.getFullYear()+"-03-31"; label="本休眠季"; }
+  else { start=(now.getFullYear()-1)+"-11-01"; end=now.getFullYear()+"-03-31"; label="刚过去的这个冬天，"; }
+  body.innerHTML='<p class="muted">正在翻这个冬天的气温记录…</p>';
+  const d=await fetchJSON(arcHourlyURL(start,end),"chill"+start+":"+G.loc,force);
+  let chill=0; const monthly={};
+  for(let i=0;i<d.hourly.time.length;i++){
+    const v=d.hourly.temperature_2m[i];
+    if(v!=null&&v>=0&&v<=7.2){ chill++; const mo=d.hourly.time[i].slice(0,7); monthly[mo]=(monthly[mo]||0)+1; }
+  }
+  window.__chill=chill; updateHero();
+  const pct=Math.min(100,Math.round(chill/1200*100));
+  const light=chill>=800?"l-ok":chill>=400?"l-yel":"l-red";
+  body.innerHTML='<p class="big"><span class="light '+light+'"></span>'+label+"桃树已攒够 <b>"+chill+"</b> 小时低温（需要约 700–1200 小时）</p>"+
+    '<p class="muted">按中高需冷品种衡量，今冬低温攒了约 '+pct+'%。'+(chill<800?'偏少：春天开花可能不齐、拖得长，请提前备好人工授粉。':'睡够了，春天发芽开花会比较整齐。')+'</p>';
+  const mos=Object.keys(monthly).sort();
+  const W=320,H=104,pb=16,bw=(W-20)/Math.max(mos.length,1);
+  const mx=Math.max(...mos.map(k=>monthly[k]));
+  let s='<svg viewBox="0 0 '+W+" "+H+'">';
+  mos.forEach((k,i)=>{
+    const bh=(monthly[k]/mx)*(H-pb-14);
+    s+='<rect x="'+(12+i*bw)+'" y="'+(H-pb-bh)+'" width="'+(bw*0.6)+'" height="'+bh+'" rx="4" fill="#047857" opacity=".82"><title>'+k+"："+monthly[k]+" 小时</title></rect>";
+    s+='<text x="'+(12+i*bw+bw*0.3)+'" y="'+(H-4)+'" font-size="8.5" fill="#a8a29e" text-anchor="middle">'+k.slice(5).replace("-","/")+"</text>";
+  });
+  s+="</svg>";
+  $("chart-f2").innerHTML=s;
+}
+function renderF3(){
+  const sel=$("variety");
+  if(!sel.options.length){
+    VARIETIES.forEach((v,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=v[0]+"（盛花+"+v[1]+" 天）"; sel.appendChild(o); });
+  }
+  const v=VARIETIES[Number(sel.value||0)];
+  $("variety-note").textContent=v[2];
+  const body=$("f3-body");
+  if(!G.bloom){ body.innerHTML='<p class="muted">等春天开花的日子估出来后，这里就显示各品种的采摘时间…</p>'; return; }
+  const hd=new Date(G.bloom); hd.setDate(hd.getDate()+v[1]);
+  const days=Math.round((hd-new Date())/86400000);
+  const w1=new Date(hd); w1.setDate(w1.getDate()-3);
+  const w2=new Date(hd); w2.setDate(w2.getDate()+7);
+  const f=x=>(x.getMonth()+1)+" 月 "+x.getDate()+" 日";
+  let level="l-ok",word="未到采收准备期，正常管理即可";
+  if(days<0){ word="按今年花期推算，本品种采收期已过"; level="l-gry"; }
+  else if(days<=21){ word="临近采收期：建议提前安排人手与销路，成熟后择晴天采收"; level="l-yel"; }
+  body.innerHTML='<p class="big"><span class="light '+level+'"></span>'+word+"</p>"+
+    '<p class="muted">花期预估为 <b class="mono">'+G.bloom+'</b> 开花，'+v[0]+' 开花后约 '+v[1]+'  天后成熟，采摘期约为 <b>'+f(w1)+' – '+f(w2)+'</b>（还有 '+Math.max(0,days)+' 天）</p>';
+  const d=G.fc.daily,t=d.time,cells=[];
+  for(let i=G.idxToday;i<t.length&&i<G.idxToday+16;i++){
+    const p=d.precipitation_sum[i];
+    const ico=p!=null&&p>=1?"🌧":p!=null&&p>=0.1?"🌦":"☀️";
+    cells.push('<div style="background:#fcfcfb;border:1px solid var(--line);border-radius:8px;text-align:center;padding:5px 2px;font-size:10.5px"><div style="color:var(--ink-3)">'+fmtDate(t[i])+'</div><div style="font-size:13px">'+ico+"</div><div style='color:var(--ink-3)' class='mono'>"+(p==null?"–":p.toFixed(0))+"mm</div></div>");
+  }
+  $("f3-note").innerHTML="未来 16 天哪天晴（熟了就挑晴天摘）：";
+  body.insertAdjacentHTML("beforeend",'<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:8px">'+cells.join("")+"</div>");
+  const W=420,rowH=17,pl=58,pr=10;
+  const spans=VARIETIES.map(v2=>{ const a=new Date(G.bloom); a.setDate(a.getDate()+v2[1]-3);
+    const b=new Date(G.bloom); b.setDate(b.getDate()+v2[1]+7); return [v2[0],a,b]; });
+  const minD=new Date(G.bloom);
+  let maxD=new Date(G.bloom);
+  spans.forEach(sp=>{ if(sp[2]>maxD) maxD=sp[2]; });
+  const total=(maxD-minD)/86400000||1;
+  const xOf=d=>pl+((d-minD)/86400000)/total*(W-pl-pr);
+  let s='<svg viewBox="0 0 '+W+" "+(spans.length*rowH+30)+'" role="img" aria-label="各品种采摘日历图">';
+  // 今天竖线
+  const todayD=new Date(G.today);
+  if(todayD>=minD&&todayD<=maxD){
+    const xt=xOf(todayD);
+    s+='<line x1="'+xt.toFixed(1)+'" y1="2" x2="'+xt.toFixed(1)+'" y2="'+(spans.length*rowH+8)+'" stroke="#047857" stroke-width="1.2" stroke-dasharray="3 3"/>';
+    s+='<text x="'+xt.toFixed(1)+'" y="10" font-size="8.5" fill="#047857" text-anchor="middle">今天</text>';
+  }
+  // 月份刻度
+  let md=new Date(minD); md.setDate(1); md.setMonth(md.getMonth()+1);
+  while(md<maxD){
+    const xm=xOf(md);
+    s+='<line x1="'+xm.toFixed(1)+'" y1="14" x2="'+xm.toFixed(1)+'" y2="'+(spans.length*rowH+8)+'" stroke="#e7e5e4" stroke-width="1"/>';
+    s+='<text x="'+xm.toFixed(1)+'" y="'+(spans.length*rowH+20)+'" font-size="8.5" fill="#a8a29e" text-anchor="middle">'+(md.getMonth()+1)+"月</text>";
+    md.setMonth(md.getMonth()+1);
+  }
+  spans.forEach((sp,i)=>{
+    const x1=xOf(sp[1]), x2=xOf(sp[2]);
+    s+='<text x="0" y="'+(i*rowH+20)+'" font-size="9.5" fill="#1c1917" font-weight="600">'+sp[0]+"</text>";
+    s+='<rect x="'+x1.toFixed(1)+'" y="'+(i*rowH+12)+'" width="'+Math.max(6,x2-x1).toFixed(1)+'" height="9" rx="4.5" fill="#c2410c" opacity=".78"><title>'+sp[0]+"：大约 "+sp[1].toLocaleDateString("sv-SE")+" 起能采，"+sp[2].toLocaleDateString("sv-SE")+" 前采完</title></rect>";
+  });
+  $("chart-f3").innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-3);margin-bottom:4px"><span style="display:inline-block;width:14px;height:8px;border-radius:4px;background:#c2410c;opacity:.75"></span>= 可采摘的日子</div>'+s;
+}
+function renderF4(){
+  const d=G.fc.daily,t=d.time,cells=[]; let br=0,sc=0;
+  const month=monthOf(G.today);
+  for(let i=G.idxToday;i<t.length&&i<G.idxToday+16;i++){
+    const tx=d.temperature_2m_max[i],tn=d.temperature_2m_min[i],p=d.precipitation_sum[i],h=d.relative_humidity_2m_mean[i];
+    if(tx==null||tn==null) continue;
+    const tm=(tx+tn)/2;
+    const wet=(p!=null&&p>=0.1)||(h!=null&&h>=85);
+    const wetHi=(p!=null&&p>=0.1)||(h!=null&&h>=90);
+    const b=month>=4&&month<=6&&tm>=13&&wet;
+    const s=month>=5&&month<=9&&tm>=16&&wetHi;
+    if(b) br++; if(s) sc++;
+    let cls="";
+    if(b&&s) cls="#c2410c"; else if(b) cls="#b91c1c"; else if(s) cls="#6d5bae";
+    cells.push('<div style="background:'+(cls?"var(--accent-soft)":"#fcfcfb")+';border:1px solid '+(cls?cls+"55":"var(--line)")+';border-radius:8px;text-align:center;padding:5px 2px;font-size:10.5px"><div style="color:var(--ink-3)">'+fmtDate(t[i])+"</div>"+'<div style="font-size:13px">'+(cls?"⚠":"·")+"</div>"+'<div style="color:'+cls+'">'+(cls?(b&&s?"褐+疮":b?"褐腐":"疮痂"):"低")+"</div></div>");
+  }
+  $("f4-body").innerHTML='<p class="big"><span class="light '+(br||sc?"l-yel":"l-ok")+'"></span>未来 16 天：'+(br||sc?("有 "+(br+sc)+" 天容易发病（褐腐 "+br+" 天、疮痂 "+sc+" 天）"):"没有容易发病的天气")+"</p>"+
+    '<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:8px">'+cells.join("")+"</div>"+
+    '<p class="note">花上和快熟的桃上怕褐腐病（红色标）；小桃怕疮痂病（紫色标）；刚发芽展叶时怕缩叶病。标红紫的日子前后别偷懒，检查一下桃园。</p>';
+}
+
+/* ---------- 自动刷新与初始化 ---------- */
+let cdLeft=AUTO_MIN*60;
+setInterval(()=>{
+  cdLeft--;
+  if(cdLeft<=0){ refreshAll(true); }
+  else if(G.fc){ $("cd").textContent=Math.floor(cdLeft/60)+":"+pad(cdLeft%60); }
+},1000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&G.fc) refreshAll(false); });
+(function initLoc(){
+  const sel=$("loc");
+  LOCATIONS.forEach((l,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=l[0]; sel.appendChild(o); });
+  sel.addEventListener("change",()=>{ G.loc=Number(sel.value); refreshAll(true); });
+})();
+
+/* ---------- 移动端抽屉导航 ---------- */
+(function(){
+  const toggle=document.getElementById("navToggle");
+  const drawer=document.getElementById("navDrawer");
+  const backdrop=document.getElementById("navBackdrop");
+  const closeBtn=document.getElementById("navClose");
+  if(!toggle) return;
+  function setDrawer(open){
+    drawer.classList.toggle("open", open);
+    backdrop.classList.toggle("show", open);
+    toggle.setAttribute("aria-expanded", open?"true":"false");
+    drawer.setAttribute("aria-hidden", open?"false":"true");
+    document.body.classList.toggle("drawer-open", open);
+  }
+  toggle.addEventListener("click", ()=>setDrawer(!drawer.classList.contains("open")));
+  closeBtn.addEventListener("click", ()=>setDrawer(false));
+  backdrop.addEventListener("click", ()=>setDrawer(false));
+  drawer.querySelectorAll("a").forEach(a=>a.addEventListener("click", ()=>setDrawer(false)));
+  window.addEventListener("keydown", e=>{ if(e.key==="Escape") setDrawer(false); });
+})();
+
+/* ---------- 滚动显现（biohub 同款） ---------- */
+(function(){
+  const els=document.querySelectorAll(".reveal");
+  if(!("IntersectionObserver" in window)){ els.forEach(el=>el.classList.add("seen")); return; }
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add("seen"); io.unobserve(en.target); } });
+  },{threshold:0.12});
+  els.forEach(el=>io.observe(el));
+})();
+
+refreshAll(false);
+</script>
+</body>
+</html>
