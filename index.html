@@ -212,6 +212,7 @@ details[open] summary { margin-bottom: 8px; }
 .ctag { border-radius: 5px; padding: 1px 5px; font-size: 9.5px; font-weight: 700; color: #fff; line-height: 1.4; }
 .ct-frost{background:var(--info);} .ct-brown{background:var(--danger);} .ct-scab{background:var(--violet);}
 .ct-leafcurl{background:#5C8A3A;} .ct-harvest{background:var(--harvest);} .ct-dry{background:var(--warn);} .ct-rain{background:#5E8CA8;}
+.ct-thin{background:#0e7490;} .ct-bag{background:#92400e;}
 .monthbar { display: flex; gap: 3px; align-items: flex-end; height: 62px; margin: 10px 0 4px; }
 .mb-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; border-radius: 8px; padding: 4px 0; transition: background .15s; }
 .mb-col:hover { background: var(--accent-soft); }
@@ -253,39 +254,6 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
 
 
 
-@media (max-width: 620px) {
-  /* 触控目标统一 >=44px（Apple HIG / WCAG 2.5.5） */
-  .btn { padding: 13px 22px; font-size: 15px; }
-  .btn-mini { padding: 12px 16px; font-size: 13.5px; }
-  .tool-row .refresh { padding: 11px 16px; font-size: 13px; }
-  .cal-nav button { width: 44px; height: 44px; font-size: 17px; }
-  .nav-links a { padding: 12px 11px; font-size: 13.5px; }
-  .chip { padding: 10px 14px; font-size: 13px; }
-  /* 排版紧凑化 */
-  .hero h1 { font-size: clamp(26px, 7vw, 34px); }
-  section { padding: 40px 0; }
-  .sec-head { margin-bottom: 22px; }
-  .card { padding: 18px 16px; }
-  .wrap { padding: 0 22px; }
-  .nav-inner { padding: 0 22px; }
-  .cal-cell { min-height: 58px; padding: 3px 4px; }
-  .cal-cell .dnum { font-size: 11.5px; }
-  .ctag { font-size: 9px; padding: 1px 4px; }
-  .big { font-size: 18px; }
-  /* 16 天网格：8 列 -> 4 列（每格约 80px，天气图标与毫米数不挤） */
-  .grid16, [style*="repeat(8,1fr)"] { grid-template-columns: repeat(4, 1fr) !important; }
-  /* 底部安全区（iPhone 手势条） */
-  body { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
-  footer { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
-  /* 方案时间线：日期列收窄，正文让位 */
-  .pdate { flex-basis: 42px; font-size: 12px; }
-  .ptitle { font-size: 14px; }
-  /* 状态栏换行友好 */
-  .statusbar { gap: 8px; font-size: 12px; }
-  .tool-row select { max-width: 46vw; }
-}
-
-@media (max-width: 460px) { .stat-grid { grid-template-columns: 1fr; } .kpi-row { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 620px) {
   /* 触控目标统一 >=44px（Apple HIG / WCAG 2.5.5） */
   .btn { padding: 13px 22px; font-size: 15px; }
@@ -342,6 +310,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       <a href="#frost">冻害</a>
       <a href="#chill">需冷量</a>
       <a href="#harvest">采收</a>
+      <a href="#irrigation">灌溉</a>
       <a href="#disease">病害</a>
       <a href="#howto">说明</a>
     </div>
@@ -392,6 +361,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
   <a href="#frost">❄️ 花期防冻</a>
   <a href="#chill">😴 休眠监测</a>
   <a href="#harvest">📅 采收窗口</a>
+  <a href="#irrigation">💧 浇水决策</a>
   <a href="#disease">🦠 病害风险</a>
   <a href="#howto">ℹ️ 使用说明</a>
   <div class="drawer-foot">桃园农事气象助手</div>
@@ -409,7 +379,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
     <div class="card reveal">
       <div id="plan-body"><p class="muted">正在根据所选乡镇的气象数据生成安排…</p></div>
       <div class="planmeta" id="plan-meta"></div>
-      <div class="toolbar"><button class="btn-mini primary" onclick="copyPlan()">📋 复制文字版（可直接粘贴到微信）</button></div>
+      <div class="toolbar"><button class="btn-mini primary" onclick="copyPlan()">📋 复制文字版（可直接粘贴到微信）</button><button class="btn-mini" onclick="sharePlan()">📤 分享给微信好友</button></div>
     </div>
   </section>
 
@@ -437,6 +407,8 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
           <span class="li"><span class="sw" style="background:var(--violet)"></span>疮痂病</span>
           <span class="li"><span class="sw" style="background:#5C8A3A"></span>缩叶病</span>
           <span class="li"><span class="sw" style="background:var(--harvest)"></span>采收</span>
+          <span class="li"><span class="sw" style="background:#0e7490"></span>疏果</span>
+          <span class="li"><span class="sw" style="background:#92400e"></span>套袋</span>
           <span class="li"><span class="sw" style="background:#5E8CA8"></span>降雨日</span>
           <span class="li"><span class="sw" style="background:var(--warn)"></span>连续干旱</span>
         </div>
@@ -462,8 +434,8 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
   <!-- ============ 四模块 ============ -->
   <section id="frost">
     <div class="sec-head reveal">
-      <h2>四个决策模块</h2>
-      <p>下面四张卡对应桃园一年的四件大事：春天防冻花、冬天看桃树睡没睡够、夏秋排采收、全程防病害。每张卡都直接给结论和建议动作，依据收在「展开」里，想深究再点开。</p>
+      <h2>五个决策模块</h2>
+      <p>下面五张卡对应桃园一年的五件大事：春天防冻花、冬天看桃树睡没睡够、夏秋排采收、天旱定浇水、全程防病害。每张卡都直接给结论和建议动作，依据收在「展开」里，想深究再点开。</p>
     </div>
     <div class="bento">
       <div class="card span-7 reveal" id="f1-card">
@@ -516,6 +488,14 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
           <p class="note">标出来的日子意思是「这种天气病菌容易侵染」，请提前一两天做准备；具体打什么药、怎么打，请听科技小院和植保站的。</p>
         </details>
       </div>
+      <div class="card span-12 reveal" id="irrigation">
+        <h3><span class="ic">💧</span>要不要浇水 <span class="tagline">近 30 天下没下雨、树喝了多少水，一眼看缺不缺</span></h3>
+        <div class="tool-body" id="f5-body"><p class="muted">正在算水分账…</p></div>
+        <details>
+          <summary>这笔水分账是怎么算的（科学依据）</summary>
+          <p class="note">把最近 30 天的降雨（按 75% 算有效，其余流走蒸发）减去桃树这阵子「喝掉」的水（按国际通用的参考蒸发量 ET₀ × 桃树各月系数折算），得出的就是水分盈亏：负得越多，土里欠的水越多。下一步要不要等雨，看未来 7 天的降雨预报。此为简化算法，没有考虑土壤保水能力差异；具体浇多少，结合扒土看墒和实际情况掌握。</p>
+        </details>
+      </div>
     </div>
   </section>
 
@@ -533,6 +513,8 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
         <tr><td>冻害预警</td><td>16 天预报 + 历史积温</td><td>物候阶段 × 临界温度表比对</td><td>红/黄/绿灯 + 防灾动作</td></tr>
         <tr><td>需冷量</td><td>11 月起小时级温度</td><td>0–7.2℃ 小时累计 vs 品种需求</td><td>休眠满足度 + 暖冬预警</td></tr>
         <tr><td>采收窗口</td><td>盛花估算 + 品种发育期 + 降雨预报</td><td>盛花 + DAFB，叠加晴雨窗</td><td>窗口日期 + 抢晴建议</td></tr>
+        <tr><td>浇水决策</td><td>近 30 天降水 + ET₀ 蒸发量 + 未来 7 天降雨</td><td>水分盈亏 = 0.75×降水 − ET₀×各月系数</td><td>浇不浇、等多久、补多少</td></tr>
+        <tr><td>疏果套袋</td><td>盛花估算</td><td>盛花 + 25/35/56 天三个节点</td><td>疏果/套袋时间窗提醒</td></tr>
         <tr><td>病害风险</td><td>预报温湿雨</td><td>三种病害侵染气象条件判定</td><td>逐日风险色块 + 用药窗口提示</td></tr>
       </table>
       <p class="note">
@@ -544,7 +526,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
 
 <footer>
   <div class="wrap foot-inner">
-    <p>开发：彭宇程 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style="color:var(--ink-3)">（版本 v3.4）</span></p>
+    <p>开发：彭宇程 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style="color:var(--ink-3)">（版本 v4.0）</span></p>
     <div class="links">
       <a href="#plan">推进方案</a>
       <a href="#calendar">月历</a>
@@ -598,7 +580,7 @@ const VARIETIES = [
 
 const $ = id => document.getElementById(id);
 const G = { fc:null, idxToday:-1, today:null, gddMap:null, bloom:null, loc:0, calY:0, calM:0, events:{} };
-const CACHE_VER = "v6", CACHE_TTL = 3600 * 1000;
+const CACHE_VER = "v7", CACHE_TTL = 3600 * 1000;
 function cacheGet(k, allowStale){
   try{
     const r=localStorage.getItem("om:"+CACHE_VER+":"+k);
@@ -636,7 +618,7 @@ async function fetchJSON(url, key, force){
 }
 const loc = () => LOCATIONS[G.loc];
 const fcURL = () => "https://api.open-meteo.com/v1/forecast?latitude="+loc()[1]+"&longitude="+loc()[2]+
-  "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,wind_speed_10m_max"+
+  "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,wind_speed_10m_max,et0_fao_evapotranspiration"+
   "&past_days=92&forecast_days=16&timezone="+encodeURIComponent(TZ);
 const arcDailyURL = (a,b) => "https://archive-api.open-meteo.com/v1/archive?latitude="+loc()[1]+"&longitude="+loc()[2]+
   "&start_date="+a+"&end_date="+b+"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone="+encodeURIComponent(TZ);
@@ -688,7 +670,7 @@ async function refreshAll(force){
     G.bloom = null;
     for(const d of arc.daily.time){ if(d>=year+"-02-01" && gdd[d]>=BLOOM_GDD){ G.bloom=d; break; } }
     buildEvents();
-    renderF1(); renderF4(); renderF3(); renderCal(); updateHero();
+    renderF1(); renderF4(); renderF5(); renderF3(); renderCal(); updateHero();
     renderF2(force).catch(e=>{ $("f2-body").innerHTML='<p class="err">今冬气温数据暂时无法获取，请稍后点击「刷新」重试。</p>'; });
     renderPlan();
   }catch(e){
@@ -741,7 +723,7 @@ function buildEvents(){
     if(inPhase && tn<=st.t10) add(date,{k:"frost",cls:"ct-frost",label:"冻",tip:"预报最低 "+tn+"℃ ≤ T10("+st.t10+"℃)"});
     if(month>=4&&month<=6&&tm>=13&&wet) add(date,{k:"brown",cls:"ct-brown",label:"褐",tip:"满足褐腐病侵染条件"});
     if(month>=5&&month<=9&&tm>=16&&wetHi) add(date,{k:"scab",cls:"ct-scab",label:"疮",tip:"满足疮痂病侵染条件"});
-    if(month>=2&&month<=4&&!G.bloom&&tm>=10&&tm<=21&&wetHi) add(date,{k:"leafcurl",cls:"ct-leafcurl",label:"缩",tip:"芽期缩叶病风险"});
+    if(month>=2&&month<=4&&(G.gddMap?(G.gddMap[G.today]||0)<BLOOM_GDD:true)&&tm>=10&&tm<=21&&wetHi) add(date,{k:"leafcurl",cls:"ct-leafcurl",label:"缩",tip:"芽期缩叶病风险"});
     if(p!=null&&p>=1) add(date,{k:"rain",cls:"ct-rain",label:p.toFixed(0)+"mm",tip:"降水 "+p+"mm"});
   }
   if(G.bloom){
@@ -750,6 +732,12 @@ function buildEvents(){
       const hd=new Date(bd); hd.setDate(hd.getDate()+v[1]);
       add(hd.toLocaleDateString("sv-SE"),{k:"harvest",cls:"ct-harvest",label:"采:"+v[0],tip:v[0]+" 估算采收窗口（盛花+"+v[1]+" 天）"});
     }
+    const t1=new Date(bd); t1.setDate(t1.getDate()+25);
+    const t2=new Date(bd); t2.setDate(t2.getDate()+35);
+    const t3=new Date(bd); t3.setDate(t3.getDate()+56);
+    add(t1.toLocaleDateString("sv-SE"),{k:"thin",cls:"ct-thin",label:"疏",tip:"疏果定果开始（盛花后约 25 天），10 天内完成"});
+    add(t2.toLocaleDateString("sv-SE"),{k:"bag",cls:"ct-bag",label:"袋",tip:"套袋开始（盛花后约 35 天，疏果完成后进行）"});
+    add(t3.toLocaleDateString("sv-SE"),{k:"bag",cls:"ct-bag",label:"袋",tip:"套袋收尾（中晚熟品种最迟这天前后完成）"});
   }
   let dry=0; const dryEnd=[];
   for(let i=G.idxToday;i>=0;i--){ const p=d.precipitation_sum[i]; if(p!=null&&p>=1) break; dry++; dryEnd.push(t[i]); }
@@ -790,12 +778,27 @@ function buildPlan(){
         else A.push({date:G.today,lv:"ok",title:v[0]+"还有约 "+left+" 天采",why:"预计 "+fmtDate(w)+" 前后成熟",how:"正常管理，到临近时这里会提醒你"});
       }
     }
+    const mk=(off,lvNear,title,why,how)=>{
+      const d2=new Date(bd); d2.setDate(d2.getDate()+off);
+      const left=Math.round((d2-new Date(G.today))/86400000);
+      if(left>=-5&&left<=35) A.push({date:left<0?G.today:d2.toLocaleDateString("sv-SE"),lv:left<=7?lvNear:"ok",title,why,how});
+    };
+    mk(25,"yel","疏果定果：这 10 天把多余的桃疏掉",
+      "今年盛花估算在 "+fmtDate(G.bloom)+"，按规律盛花后 25 天左右开始疏果，硬核前疏完最合适",
+      "先把小果、畸形果、病虫果、并生果疏掉，长果枝隔 15–20 厘米留 1–2 个，壮枝多留、弱枝少留，背下果多留不住；定果时按套袋计划留够果量。具体留果标准听科技小院的");
+    mk(35,"yel","开始套袋（疏完果再套）",
+      "疏果完成后就该套袋了（约盛花后 35 天），套晚了果面着色差、病虫果多",
+      "套袋前全园打一遍杀菌杀虫药，药干就套、当天打当天套完最好；纸袋选防水透气的；先套树冠上部和内膛，再套外围下部");
+    mk(56,"ok","套袋收尾别拖过这几天",
+      "套得太晚，果上上了病也看不见，防效打折扣",
+      "还没套完的抓紧收尾；套完查一遍袋口扎严了没有，防雨水进袋、防梨小钻袋");
   }
   if(month>=4&&month<=9){
     let dry=0;
     for(let i=G.idxToday;i>=0;i--){ const p=d.precipitation_sum[i]; if(p!=null&&p>=1) break; dry++; }
     if(dry>=10) A.push({date:G.today,lv:"yel",title:"桃园有点旱了",why:"已经 "+dry+" 天没下过像样的雨（一次 1mm 以上）",how:"扒开土看看墒情；桃子正长个儿的时候最缺水，早晚凉快时浇，别中午浇"});
   }
+  if(month===11) A.push({date:G.today,lv:"yel",title:"上冻前浇一遍封冻水",why:"「夜冻昼消」的这几天浇透封冻水，桃树抗冻、来年春天墒情也好",how:"日平均气温降到 3–5℃、夜里有冰白天能化的时候浇，浇到渗透为止；别拖到水渗不完就上冻"});
   if(month>=11||month<=2) A.push({date:G.today,lv:"ok",title:"冬天：留意桃树睡了多久",why:"冬天攒低温的天数，决定春天开花齐不齐",how:"到 2 月底还差得多的年份，春天开花会乱，提前备好人工授粉的花粉和工具"});
   A.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.lv==="red"?-1:b.lv==="red"?1:0));
   return A;
@@ -817,6 +820,12 @@ function copyPlan(){
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(()=>showToast("已复制，可粘贴到微信发送"),()=>fbCopy(txt));
   }else fbCopy(txt);
+}
+function sharePlan(){
+  const txt=window.__planText; if(!txt) return;
+  if(navigator.share){
+    navigator.share({title:"桃园近期农事安排",text:txt}).catch(()=>{});
+  }else copyPlan();
 }
 function fbCopy(txt){
   const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select();
@@ -1061,6 +1070,52 @@ function renderF4(){
   $("f4-body").innerHTML='<p class="big"><span class="light '+(br||sc?"l-yel":"l-ok")+'"></span>未来 16 天：'+(br||sc?("有 "+(br+sc)+" 天容易发病（褐腐 "+br+" 天、疮痂 "+sc+" 天）"):"没有容易发病的天气")+"</p>"+
     '<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:8px">'+cells.join("")+"</div>"+
     '<p class="note">花上和快熟的桃上怕褐腐病（红色标）；小桃怕疮痂病（紫色标）；刚发芽展叶时怕缩叶病。标红紫的日子前后别偷懒，检查一下桃园。</p>';
+}
+
+/* ---------- 浇水决策（水分盈亏法） ---------- */
+const KC_MONTHS = {1:.3,2:.4,3:.6,4:.6,5:.65,6:.8,7:.9,8:.9,9:.7,10:.6,11:.3,12:.3};
+function renderF5(){
+  const body=$("f5-body");
+  if(!G.fc||G.idxToday<0) return;
+  const d=G.fc.daily,t=d.time;
+  const et0=d.et0_fao_evapotranspiration;
+  let p30=0,etc30=0,et0days=0;
+  for(let i=Math.max(0,G.idxToday-29);i<=G.idxToday;i++){
+    const p=d.precipitation_sum[i]; if(p!=null) p30+=p;
+    if(et0&&et0[i]!=null){ etc30+=et0[i]*KC_MONTHS[monthOf(t[i])]; et0days++; }
+  }
+  let rain7=0;
+  for(let i=G.idxToday+1;i<=Math.min(G.idxToday+7,t.length-1);i++){ const p=d.precipitation_sum[i]; if(p!=null) rain7+=p; }
+  p30=Math.round(p30); rain7=Math.round(rain7);
+  const m=monthOf(G.today);
+  if(m===12||m===1||m===2){
+    body.innerHTML='<p class="big"><span class="light l-ok"></span>桃树在休眠，不用浇水</p>'+
+      '<p class="muted">上冻前那次「封冻水」浇透就行（推进方案里有提醒）。开春萌芽后这里恢复显示。</p>';
+    return;
+  }
+  if(!et0||et0days<15){
+    let dry=0;
+    for(let i=G.idxToday;i>=0;i--){ const p=d.precipitation_sum[i]; if(p!=null&&p>=1) break; dry++; }
+    body.innerHTML='<p class="big"><span class="light '+(dry>=10?"l-yel":"l-ok")+'"></span>'+(dry>=10?("已经 "+dry+" 天没下过像样的雨，扒土看看墒情"):"近期降水正常，暂不用特意浇水")+"</p>"+
+      '<p class="muted">近 30 天降雨约 <b class="mono">'+p30+'</b> mm。蒸发量数据暂时取不到，先按降雨和连旱天数提醒；数据恢复后这里会显示完整的水分账。</p>'+
+      (rain7>=15?'<p class="muted" style="margin-top:6px">未来 7 天预计有雨 <b class="mono">'+rain7+'</b> mm，不着急可以先等这场雨。</p>':"");
+    return;
+  }
+  const eff=0.75*p30;
+  const bal=Math.round(eff-etc30);
+  let light,word,adv;
+  if(bal>=0){ light="l-ok"; word="近期水分充足，暂时不用浇"; adv="按平常节奏管理就行。桃特别怕涝，别大水漫灌太勤。"; }
+  else if(bal>=-20){ light="l-yel"; word="水分有点亏缺，留意着"; adv="扒开树盘下的土看看：捏不成团就该浇了；浇就浇透（一次 30–40 mm），别天天溜边水。"; }
+  else { light="l-red"; word="缺水明显，建议尽快安排灌溉"; adv="桃子膨大期缺水直接掉果、果个长不大。早晚凉快时浇透（一次 30–40 mm，每亩约 20–27 立方水），别正午浇。"; }
+  const rainTip=rain7>=15?'<p class="muted" style="margin-top:8px">💡 未来 7 天预计有雨 <b class="mono">'+rain7+'</b> mm，能补回 <b class="mono">'+Math.round(rain7*0.75)+'</b> mm 左右——不着急可以先等这场雨再定。</p>':"";
+  body.innerHTML='<p class="big"><span class="light '+light+'"></span>'+word+"</p>"+
+    '<div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">'+
+      '<div class="kpi"><div class="kv" style="color:var(--info)">'+p30+'<span style="font-size:12px;color:var(--ink-3)"> mm</span></div><div class="kl">近 30 天降雨</div></div>'+
+      '<div class="kpi"><div class="kv" style="color:var(--violet)">'+Math.round(etc30)+'<span style="font-size:12px;color:var(--ink-3)"> mm</span></div><div class="kl">桃树同期需水</div></div>'+
+      '<div class="kpi"><div class="kv" style="color:'+(bal>=0?"var(--accent)":"var(--danger)")+'">'+(bal>0?"+":"")+bal+'<span style="font-size:12px;color:var(--ink-3)"> mm</span></div><div class="kl">水分盈亏</div></div>'+
+    "</div>"+rainTip+
+    '<p class="muted" style="margin-top:8px">'+adv+"</p>"+
+    '<p class="note">mm 就是「一亩地积 1 毫米深的水」，1 mm ≈ 每亩 0.67 立方水。需水按参考蒸发量 ET₀ × 桃树各月系数折算（6–8 月果期最大），降雨按 75% 算有效。</p>';
 }
 
 /* ---------- 自动刷新与初始化 ---------- */
