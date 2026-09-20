@@ -227,7 +227,7 @@ details[open] summary { margin-bottom: 8px; }
 .ctag { border-radius: 5px; padding: 1px 5px; font-size: 9.5px; font-weight: 700; color: #fff; line-height: 1.4; }
 .ct-frost{background:var(--info);} .ct-brown{background:var(--danger);} .ct-scab{background:var(--violet);}
 .ct-leafcurl{background:#5C8A3A;} .ct-harvest{background:var(--harvest);} .ct-dry{background:var(--warn);} .ct-rain{background:#5E8CA8;}
-.ct-thin{background:#0e7490;} .ct-bag{background:#92400e;}
+.ct-thin{background:#0e7490;} .ct-bag{background:#92400e;} .ct-pest{background:#3f3f46;}
 .monthbar { display: flex; gap: 3px; align-items: flex-end; height: 62px; margin: 10px 0 4px; }
 .mb-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; border-radius: 8px; padding: 4px 0; transition: background .15s; }
 .mb-col:hover { background: var(--accent-soft); }
@@ -482,6 +482,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
           <span class="li"><span class="sw" style="background:#5C8A3A"></span>缩叶病</span>
           <span class="li"><span class="sw" style="background:var(--harvest)"></span>采收</span>
           <span class="li"><span class="sw" style="background:#0e7490"></span>疏果</span>
+          <span class="li"><span class="sw" style="background:#3f3f46"></span>虫害窗口</span>
           <span class="li"><span class="sw" style="background:#92400e"></span>套袋</span>
           <span class="li"><span class="sw" style="background:#5E8CA8"></span>降雨日</span>
           <span class="li"><span class="sw" style="background:var(--warn)"></span>连续干旱</span>
@@ -508,8 +509,8 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
   <!-- ============ 四模块 ============ -->
   <section id="frost">
     <div class="sec-head reveal">
-      <h2>五个决策模块</h2>
-      <p>下面五张卡对应桃园一年的五件大事：春天防冻花、冬天看桃树睡没睡够、夏秋排采收、天旱定浇水、全程防病害。每张卡都直接给结论和建议动作，依据收在「展开」里，想深究再点开。</p>
+      <h2>六个决策模块</h2>
+      <p>下面六张卡对应桃园一年的六件大事：春天防冻花、冬天看桃树睡没睡够、夏秋排采收、天旱定浇水、防病害、防虫害。每张卡都直接给结论和建议动作，依据收在「展开」里，想深究再点开。</p>
     </div>
     <div class="bento">
       <div class="card span-7 reveal" id="f1-card">
@@ -573,7 +574,21 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
           <p class="note">标出来的日子意思是「这种天气病菌容易侵染」，请提前一两天做准备；具体打什么药、怎么打，请听科技小院和植保站的。</p>
         </details>
       </div>
-      <div class="card span-12 reveal" id="irrigation">
+      <div class="card span-6 reveal" id="pest">
+        <h3><span class="ic">🐛</span>哪几天要防虫 <span class="tagline">按积温推梨小食心虫</span></h3>
+        <div class="tool-body" id="pest-body"><p class="muted">正在计算…</p></div>
+        <details>
+          <summary>虫害窗口是怎么推的（科学依据）</summary>
+          <table class="tb">
+            <tr><th>世代</th><th>距盛花的积温（7.2℃ 基点）</th><th>含义</th></tr>
+            <tr><td>第 1 代</td><td class="mono">约 175 ℃·d</td><td>幼虫孵化，首轮防治窗口</td></tr>
+            <tr><td>第 2 代</td><td class="mono">约 750 ℃·d</td><td>第二代防治窗口</td></tr>
+            <tr><td>第 3 代</td><td class="mono">约 1400 ℃·d</td><td>第三代窗口（钻袋关键期）</td></tr>
+          </table>
+          <p class="note">口径来自美国多州推广体系的通用积温模型（UC IPM、Cornell NEWA、WSU、MSU、NC State、Virginia Tech，详见 docs/pest-model-notes.md）。本站没有诱捕器数据，以盛花日作代理锚点，地区差异大——窗口供参考，具体时间与药剂请结合本地诱捕器并听植保站的。</p>
+        </details>
+      </div>
+      <div class="card span-6 reveal" id="irrigation">
         <h3><span class="ic">💧</span>要不要浇水 <span class="tagline">近 30 天下没下雨、树喝了多少水，一眼看缺不缺</span></h3>
         <div class="tool-body" id="f5-body"><p class="muted">正在算水分账…</p></div>
         <details>
@@ -711,6 +726,17 @@ const AUTO_MIN = 30, BLOOM_GDD = 200;
 /* 访问量手工数据：从 Cloudflare 后台看到新数字后改这里（推线上后网页即更新）。
    若将来在部署端配置了自动统计密钥（见 DEPLOY.md），这里会被每日自动曲线取代 */
 const STATS_MANUAL = { pvText: "2.06k", updated: "2026/09/20" };
+/* 虫害（梨小食心虫）积温模型：7.2℃ 基点，自盛花（代理锚点，无诱捕器数据）起算。
+   节点口径：UC IPM / Cornell NEWA / WSU / MSU / NC State / Virginia Tech 通用推广口径，
+   详见 docs/pest-model-notes.md；地区差异大，建议结合本地诱捕器校准 */
+const PEST = {
+  base: 7.2, win: 5,
+  gens: [
+    { dd: 175,  zh: "第 1 代幼虫", en: "1st-brood larvae" },
+    { dd: 750,  zh: "第 2 代幼虫", en: "2nd-brood larvae" },
+    { dd: 1400, zh: "第 3 代幼虫", en: "3rd-brood larvae" }
+  ]
+};
 /* 语言：zh/en。记忆在本地，首次访问按浏览器语言选择 */
 let LANG = "zh";
 try{ LANG = localStorage.getItem("taoyuan-lang") || ((navigator.language||"").toLowerCase().startsWith("zh")?"zh":"en"); }catch(e){}
@@ -780,6 +806,7 @@ const VARIETIES_BY = {
 };
 const varieties = () => VARIETIES_BY[loc()[3]] || VARIETIES_BY.CN;
 const vName = v => LANG==="zh" ? v[0] : v[1];
+const gname = g => T(g.zh, g.en);   /* 虫害世代名 */
 /* ================= 结束参数区 ================= */
 
 const $ = id => document.getElementById(id);
@@ -959,7 +986,19 @@ function phenoReset(){
 function reapplyPheno(){
   applyPhenoOverride();
   renderPhenoBox();
-  if(G.fc){ buildEvents(); renderF1(); renderF4(); renderF5(); renderF3(); renderCal(); updateHero(); renderPlan(); }
+  if(G.fc){ buildEvents(); renderF1(); renderF4(); renderF5(); renderPest(); renderF3(); renderCal(); updateHero(); renderPlan(); }
+}
+
+/* 把 7.2℃ 基点积温沿 16 天预报续算到预报期末（虫害窗口可能落在未来 16 天内） */
+function extendGdd72WithForecast(){
+  if(!G.gddMap72||!G.fc||!G.fc.daily||G.idxToday<0) return;
+  const t=G.fc.daily.time, tx=G.fc.daily.temperature_2m_max, tn=G.fc.daily.temperature_2m_min;
+  let v=G.gddMap72[t[G.idxToday]]; if(v==null) return;
+  for(let i=G.idxToday+1;i<t.length;i++){
+    const a=tx[i], b=tn[i];
+    if(a!=null&&b!=null) v+=Math.max(0,(a+b)/2-PEST.base);
+    G.gddMap72[t[i]]=v;
+  }
 }
 
 /* ---------- 主流程 ---------- */
@@ -979,21 +1018,26 @@ async function refreshAll(force){
     const lagS = lag.toLocaleDateString("sv-SE");
     const arc = await fetchJSON(arcDailyURL(year+"-01-01", lagS), "arcm"+lagS+":"+G.loc, force);
     const gdd = gddSeries(arc.daily.time, arc.daily.temperature_2m_max, arc.daily.temperature_2m_min, 4.5);
+    const gdd72 = gddSeries(arc.daily.time, arc.daily.temperature_2m_max, arc.daily.temperature_2m_min, PEST.base);   /* 虫害积温（7.2℃ 基点） */
     for(let i=0;i<=G.idxToday;i++){
       const d=tAll[i];
       if(d>lagS && gdd[d]===undefined){
         const tx=fc.daily.temperature_2m_max[i], tn2=fc.daily.temperature_2m_min[i];
-        gdd[d]=(i>0?gdd[tAll[i-1]]:0)+(tx!=null&&tn2!=null?Math.max(0,(tx+tn2)/2-4.5):0);
+        const inc=(tx!=null&&tn2!=null)?Math.max(0,(tx+tn2)/2-4.5):0;
+        gdd[d]=(i>0?gdd[tAll[i-1]]:0)+inc;
+        if(gdd72[tAll[i-1]]!==undefined) gdd72[d]=gdd72[tAll[i-1]]+((tx!=null&&tn2!=null)?Math.max(0,(tx+tn2)/2-PEST.base):0);
       }
     }
     G.gddMap = gdd;
+    G.gddMap72 = gdd72;
+    extendGdd72WithForecast();   /* 虫害窗口可能落在未来 16 天预报段，需沿预报续算 */
     G.bloom = null;
     for(const d of arc.daily.time){ if(d>=year+"-02-01" && gdd[d]>=BLOOM_GDD){ G.bloom=d; break; } }
     G.bloomRaw = G.bloom;
     applyPhenoOverride();   /* 物候人工修正：有上报则覆盖 G.bloom 与阶段判定，无/已清除则保持气象推算 */
     renderPhenoBox();
     buildEvents();
-    renderF1(); renderF4(); renderF5(); renderF3(); renderCal(); updateHero();
+    renderF1(); renderF4(); renderF5(); renderPest(); renderF3(); renderCal(); updateHero();
     renderF2(force).catch(e=>{ $("f2-body").innerHTML='<p class="err">'+T("今冬气温数据暂时无法获取，请稍后点击「刷新」重试。","Winter temperature data unavailable right now — tap “Refresh” later to retry.")+'</p>'; });
     renderPlan();
   }catch(e){
@@ -1036,9 +1080,10 @@ function buildEvents(){
   const d=G.fc.daily, t=d.time, month=Number(G.today.slice(5,7));
   const inPhase = month>=2 && month<=5;
   const st = effStageOf();   /* 物候人工修正：走带偏移的阶段判定 */
+  const pw = pestWindows();  /* 虫害防治窗口 */
   const L = {
     frost: T("冻","Fr"), brown: T("褐","BR"), scab: T("疮","Sc"), leafcurl: T("缩","LC"), dry: T("旱","Dry"),
-    thin: T("疏","Th"), bag: T("袋","Bg"),
+    thin: T("疏","Th"), bag: T("袋","Bg"), pest: T("虫","P"),
     pick: T("采:","Pick:"),
   };
   for(let i=G.idxToday;i<t.length&&i<G.idxToday+16;i++){
@@ -1053,6 +1098,7 @@ function buildEvents(){
     if(month>=5&&month<=9&&tm>=16&&wetHi) add(date,{k:"scab",cls:"ct-scab",label:L.scab,tip:T("满足疮痂病侵染条件","Scab infection weather")});
     if(month>=2&&month<=4&&effGddToday()<BLOOM_GDD&&tm>=10&&tm<=21&&wetHi) add(date,{k:"leafcurl",cls:"ct-leafcurl",label:L.leafcurl,tip:T("芽期缩叶病风险","Leaf-curl risk at bud stage")});
     if(p!=null&&p>=1) add(date,{k:"rain",cls:"ct-rain",label:p.toFixed(0)+"mm",tip:T("降水 "+p+"mm","Rain "+p+" mm")});
+    if(pw.some(w=>date>=w.start&&date<=w.end)) add(date,{k:"pest",cls:"ct-pest",label:L.pest,tip:T("梨小食心虫防治窗口","Oriental fruit moth spray window")});
   }
   if(G.bloom){
     const bd=new Date(G.bloom);
@@ -1121,6 +1167,17 @@ function buildPlan(){
       ["套袋收尾别拖过这几天","Finish bagging before it's too late"],
       ["套得太晚，果上上了病也看不见，防效打折扣","Bag too late and disease hides inside the bag — protection suffers"],
       ["还没套完的抓紧收尾；套完查一遍袋口扎严了没有，防雨水进袋、防梨小钻袋","Wrap up any remaining trees; check each bag is sealed tight to keep rain out and oriental fruit moth from sneaking in"]);
+  }
+  if(G.bloom&&G.gddMap72){
+    for(const w of pestWindows()){
+      if(w.end<G.today) continue;
+      const d0=w.start>G.today?w.start:G.today;
+      if(d0>t[t.length-1]) continue;
+      A.push({date:d0,lv:"yel",
+        title:T(gname(w.g)+"防治窗口（梨小食心虫）",gname(w.g)+" spray window (oriental fruit moth)"),
+        why:T("按积温推算这前后是 "+gname(w.g)+"孵化期，蛀果/钻袋就发生在这几天","Degree days put "+gname(w.g)+" hatching around now — fruit/bag penetration happens in these days"),
+        how:T("窗口期内打一遍针对性杀虫剂，套袋园重点查袋口；具体药剂和时间听当地植保站的","Spray a targeted insecticide within the window; bagged blocks should check bag seals — follow local extension for products and timing")});
+    }
   }
   if(month===11) A.push({date:G.today,lv:"yel",title:T("上冻前浇一遍封冻水","Freeze-up irrigation before winter"),why:T("「夜冻昼消」的这几天浇透封冻水，桃树抗冻、来年春天墒情也好","Water deeply during the “freezes at night, thaws by day” stretch — trees winter better and spring soil holds moisture"),how:T("日平均气温降到 3–5℃、夜里有冰白天能化的时候浇，浇到渗透为止；别拖到水渗不完就上冻","Irrigate when daily mean is 3–5°C and ice melts by day; soak the root zone fully — don't wait until water can no longer infiltrate")});
   if(month>=11||month<=2) A.push({date:G.today,lv:"ok",title:T("冬天：留意桃树睡了多久","Winter: watch how long the trees have slept"),why:T("冬天攒低温的天数，决定春天开花齐不齐","Winter chill hours decide how evenly trees bloom in spring"),how:T("到 2 月底还差得多的年份，春天开花会乱，提前备好人工授粉的花粉和工具","If chill is far short by end of February, bloom will be uneven — have pollen and tools ready for hand pollination")});
@@ -1449,6 +1506,65 @@ function renderF5(){
     '<p class="note">'+T("mm 就是「一亩地积 1 毫米深的水」，1 mm ≈ 每亩 0.67 立方水。需水按参考蒸发量 ET₀ × 桃树各月系数折算（6–8 月果期最大），降雨按 75% 算有效。","1 mm of rain ≈ 1 L per m² (≈ 10 m³ per ha). Water use = reference ET₀ × peach crop coefficient by month (peaks Jun–Aug); 75% of rain counts as effective.")+"</p>";
 }
 
+/* ---------- 虫害（梨小食心虫）积温窗口 ---------- */
+function pestWindows(){
+  if(!G.gddMap72||!G.bloom) return [];
+  const keys=Object.keys(G.gddMap72).sort();
+  const biofix=G.gddMap72[G.bloom]; if(biofix==null) return [];
+  const out=[];
+  for(const g of PEST.gens){
+    const target=biofix+g.dd;
+    let peak=null;
+    for(const d of keys){ if(d>=G.bloom && G.gddMap72[d]>=target){ peak=d; break; } }
+    if(!peak) continue;
+    const s=new Date(peak); s.setDate(s.getDate()-PEST.win);
+    const e=new Date(peak); e.setDate(e.getDate()+PEST.win);
+    out.push({ g, target, peak, start:s.toLocaleDateString("sv-SE"), end:e.toLocaleDateString("sv-SE") });
+  }
+  return out;
+}
+function renderPest(){
+  const body=$("pest-body"); if(!body) return;
+  const m=monthOf(G.today);
+  if(m<3||m>10){
+    body.innerHTML='<p class="big"><span class="light l-ok"></span>'+T("桃树休眠，无虫害风险","Trees are dormant — no pest pressure")+'</p>'+
+      '<p class="muted">'+T("梨小食心虫的防治窗口在 3–10 月显示。冬季清园、刮树皮仍是减少越冬虫源的好办法。","Codling-moth-style windows show Mar–Oct. Winter sanitation and bark scraping still cut overwintering sources.")+'</p>';
+    return;
+  }
+  if(!G.gddMap72||!G.bloom){
+    body.innerHTML='<p class="muted">'+T("等春天盛花日估出来后，这里按积温推各代幼虫的防治窗口…","Once full bloom is estimated, generation spray windows appear here based on degree days…")+'</p>';
+    return;
+  }
+  const wins=pestWindows();
+  const cur=G.gddMap72[G.today]||0;
+  const biofix=G.gddMap72[G.bloom];
+  const inWin=wins.filter(w=>G.today>=w.start&&G.today<=w.end);
+  const upcoming=wins.filter(w=>w.start>G.today);
+  let light,word;
+  if(inWin.length){
+    light="l-red"; const w=inWin[inWin.length-1];
+    word=T(gname(w.g)+"防治窗口进行中（到 "+fmtDate(w.end)+"）",gname(w.g)+" spray window open (until "+fmtDate(w.end)+")");
+  }else if(upcoming.length){
+    light="l-yel"; const w=upcoming[0];
+    const days=Math.round((new Date(w.start)-new Date(G.today))/86400000);
+    word=T("距 "+gname(w.g)+"防治窗口约 "+days+" 天（"+fmtDate(w.start)+" 起）","About "+days+" days to the "+gname(w.g)+" window (from "+fmtDate(w.start)+")");
+  }else{
+    light="l-ok";
+    word=T("今年主要世代的窗口都已过","All major generation windows have passed this year");
+  }
+  /* 16 天格：落在窗口内的日子标「虫」 */
+  const d=G.fc.daily,t=d.time,cells=[]; let hit=0;
+  const inAnyWin=iso=>wins.some(w=>iso>=w.start&&iso<=w.end);
+  for(let i=G.idxToday;i<t.length&&i<G.idxToday+16;i++){
+    const iso=t[i], hitW=inAnyWin(iso);
+    if(hitW) hit++;
+    cells.push('<div style="background:'+(hitW?"var(--danger-soft)":"#fcfcfb")+';border:1px solid '+(hitW?"#3f3f4255":"var(--line)")+';border-radius:8px;text-align:center;padding:5px 2px;font-size:10.5px"><div style="color:var(--ink-3)">'+fmtDate(iso)+"</div"+'><div style="font-size:13px;color:'+(hitW?"#3f3f46":"var(--ink-3)")+'">'+(hitW?"🐛":"·")+"</div></div>");
+  }
+  body.innerHTML='<p class="big"><span class="light '+light+'"></span>'+word+"</p>"+
+    '<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:8px">'+cells.join("")+"</div>"+
+    '<p class="note">'+T("深色日子在防治窗口内；窗口按 7.2℃ 基点积温自盛花起算（代理锚点），供参考——具体时间与药剂结合本地诱捕器并听植保站的。","Dark days fall in spray windows; windows use 7.2°C degree days from full bloom (proxy anchor) — for reference only; confirm with local traps and extension.")+"</p>";
+}
+
 /* ---------- 访问统计（过去 30 天，聚合数字） ---------- */
 async function renderStats(){
   const body=$("stats-body"), chart=$("stats-chart");
@@ -1555,12 +1671,19 @@ function applyStaticLang(){
   S("#calendar .sec-head p",T("一整个月的农事日子贴在一本月历上：哪个日子标了「采」就是哪天能采桃，标了「褐」「疮」的天要注意防病，标了「冻」的天夜里要防霜。上面一排小柱子是每个月忙闲程度，点一下就能翻到那个月。","A whole month of key days on one calendar: “Pick” days are estimated harvest days, “BR/Sc” days warn of disease weather, “Fr” nights warn of frost. The bar strip above shows how busy each month is — tap to jump."));
   S("#calendar .span-4 h3",T('<span class="ic">📊</span>这个月有几件事','<span class="ic">📊</span>This month\'s workload'));
   S("#calendar .span-4 .chart-title",T("未来 16 天 · 风险与降水","Next 16 days · risk & rain"));
-  S(".legend",T('<span class="li"><span class="sw" style="background:var(--info)"></span>冻害风险</span><span class="li"><span class="sw" style="background:var(--danger)"></span>褐腐病</span><span class="li"><span class="sw" style="background:var(--violet)"></span>疮痂病</span><span class="li"><span class="sw" style="background:#5C8A3A"></span>缩叶病</span><span class="li"><span class="sw" style="background:var(--harvest)"></span>采收</span><span class="li"><span class="sw" style="background:#0e7490"></span>疏果</span><span class="li"><span class="sw" style="background:#92400e"></span>套袋</span><span class="li"><span class="sw" style="background:#5E8CA8"></span>降雨日</span><span class="li"><span class="sw" style="background:var(--warn)"></span>连续干旱</span>','<span class="li"><span class="sw" style="background:var(--info)"></span>Frost risk</span><span class="li"><span class="sw" style="background:var(--danger)"></span>Brown rot</span><span class="li"><span class="sw" style="background:var(--violet)"></span>Scab</span><span class="li"><span class="sw" style="background:#5C8A3A"></span>Leaf curl</span><span class="li"><span class="sw" style="background:var(--harvest)"></span>Pick</span><span class="li"><span class="sw" style="background:#0e7490"></span>Thinning</span><span class="li"><span class="sw" style="background:#92400e"></span>Bagging</span><span class="li"><span class="sw" style="background:#5E8CA8"></span>Rain day</span><span class="li"><span class="sw" style="background:var(--warn)"></span>Dry spell</span>'));
+  S(".legend",T('<span class="li"><span class="sw" style="background:var(--info)"></span>冻害风险</span><span class="li"><span class="sw" style="background:var(--danger)"></span>褐腐病</span><span class="li"><span class="sw" style="background:var(--violet)"></span>疮痂病</span><span class="li"><span class="sw" style="background:#5C8A3A"></span>缩叶病</span><span class="li"><span class="sw" style="background:var(--harvest)"></span>采收</span><span class="li"><span class="sw" style="background:#0e7490"></span>疏果</span><span class="li"><span class="sw" style="background:#92400e"></span>套袋</span><span class="li"><span class="sw" style="background:#3f3f46"></span>虫害窗口</span><span class="li"><span class="sw" style="background:#5E8CA8"></span>降雨日</span><span class="li"><span class="sw" style="background:var(--warn)"></span>连续干旱</span>','<span class="li"><span class="sw" style="background:var(--info)"></span>Frost risk</span><span class="li"><span class="sw" style="background:var(--danger)"></span>Brown rot</span><span class="li"><span class="sw" style="background:var(--violet)"></span>Scab</span><span class="li"><span class="sw" style="background:#5C8A3A"></span>Leaf curl</span><span class="li"><span class="sw" style="background:var(--harvest)"></span>Pick</span><span class="li"><span class="sw" style="background:#0e7490"></span>Thinning</span><span class="li"><span class="sw" style="background:#92400e"></span>Bagging</span><span class="li"><span class="sw" style="background:#3f3f46"></span>Pest window</span><span class="li"><span class="sw" style="background:#5E8CA8"></span>Rain day</span><span class="li"><span class="sw" style="background:var(--warn)"></span>Dry spell</span>'));
   S("#calendar details summary",T("这本月历怎么看","How to read this calendar"));
   S("#calendar details p.note",T("点左右箭头或月份小柱子翻月。带「采:品种名」的日期是按往年规律推的成熟日子，供安排人手和联系买主参考；「冻」「褐」「疮」等天气类标签只显示未来 16 天（天气预报的范围）。今天用绿框标出。","Page months with the arrows or the month bars. “Pick:” days are estimated from typical ripening — for planning labor and buyers. Weather tags (frost/disease) only cover the next 16 forecast days. Today is ringed in green."));
   /* 四/五模块 */
-  S("#frost .sec-head h2",T("五个决策模块","Five decision modules"));
-  S("#frost .sec-head p",T("下面五张卡对应桃园一年的五件大事：春天防冻花、冬天看桃树睡没睡够、夏秋排采收、天旱定浇水、全程防病害。每张卡都直接给结论和建议动作，依据收在「展开」里，想深究再点开。","Five cards for the five big jobs of the peach year: spring frost, winter chill, summer picking, irrigation, and season-long disease defense. Each card leads with the conclusion; the science sits under the fold-out."));
+  S("#frost .sec-head h2",T("六个决策模块","Six decision modules"));
+  S("#frost .sec-head p",T("下面六张卡对应桃园一年的六件大事：春天防冻花、冬天看桃树睡没睡够、夏秋排采收、天旱定浇水、防病害、防虫害。每张卡都直接给结论和建议动作，依据收在「展开」里，想深究再点开。","Six cards for the six big jobs of the peach year: spring frost, winter chill, summer picking, irrigation, and season-long disease and pest defense. Each card leads with the conclusion; the science sits under the fold-out."));
+  S("#pest h3",T('<span class="ic">🐛</span>哪几天要防虫 <span class="tagline">按积温推梨小食心虫</span>','<span class="ic">🐛</span>Pest-pressure days <span class="tagline">oriental fruit moth, by degree days</span>'));
+  S("#pest details summary",T("虫害窗口是怎么推的（科学依据）","How pest windows are derived (the science)"));
+  S("#pest details table.tb",'<tr><th>'+T("世代","Brood")+'</th><th>'+T("距盛花的积温（7.2℃ 基点）","Degree days from bloom (7.2°C base)")+'</th><th>'+T("含义","Meaning")+"</th></tr>"+
+    "<tr><td>"+T("第 1 代","1st brood")+'</td><td class="mono">~175 ℃·d</td><td>'+T("幼虫孵化，首轮防治窗口","larval hatch, first spray window")+"</td></tr>"+
+    "<tr><td>"+T("第 2 代","2nd brood")+'</td><td class="mono">~750 ℃·d</td><td>'+T("第二代防治窗口","second spray window")+"</td></tr>"+
+    "<tr><td>"+T("第 3 代","3rd brood")+'</td><td class="mono">~1400 ℃·d</td><td>'+T("第三代窗口（钻袋关键期）","third window (key bag-penetration period)")+"</td></tr>");
+  S("#pest details p.note",T("口径来自美国多州推广体系的通用积温模型（UC IPM、Cornell NEWA、WSU、MSU、NC State、Virginia Tech，详见 docs/pest-model-notes.md）。本站没有诱捕器数据，以盛花日作代理锚点，地区差异大——窗口供参考，具体时间与药剂请结合本地诱捕器并听植保站的。","Generic degree-day model from US extension systems (UC IPM, Cornell NEWA, WSU, MSU, NC State, Virginia Tech — see docs/pest-model-notes.md). No trap data here; full bloom is a proxy anchor, and regions differ — treat windows as reference and confirm with local traps and extension."));
   S("#f1-card h3",T('<span class="ic">❄️</span>花期防冻 <span class="tagline">开花怕冻，提前几天就知道</span>','<span class="ic">❄️</span>Bloom frost alert <span class="tagline">frost at bloom, known days ahead</span>'));
   const f1titles=document.querySelectorAll("#f1-card .chart-title");
   if(f1titles.length) f1titles[0].textContent=T("未来 16 天最低温走势（虚线 = 当前阶段 T10）","Min temps, next 16 days (dashed = current-stage T10)");
@@ -1602,7 +1725,8 @@ function applyStaticLang(){
     "<tr><td>"+T("采收窗口","Pick windows")+"</td><td>"+T("盛花估算 + 品种发育期 + 降雨预报","bloom est. + variety DAFB + rain")+"</td><td>"+T("盛花 + DAFB，叠加晴雨窗","bloom + DAFB + dry-day windows")+"</td><td>"+T("窗口日期 + 抢晴建议","window dates + weather advice")+"</td></tr>"+
     "<tr><td>"+T("浇水决策","Water balance")+"</td><td>"+T("近 30 天降水 + ET₀ 蒸发量 + 未来 7 天降雨","30-day rain + ET₀ + 7-day rain")+"</td><td>"+T("水分盈亏 = 0.75×降水 − ET₀×各月系数","balance = 0.75×rain − ET₀×monthly Kc")+"</td><td>"+T("浇不浇、等多久、补多少","water now / wait / how much")+"</td></tr>"+
     "<tr><td>"+T("疏果套袋","Thinning & bagging")+"</td><td>"+T("盛花估算","bloom estimate")+"</td><td>"+T("盛花 + 25/35/56 天三个节点","bloom +25/35/56 d")+"</td><td>"+T("疏果/套袋时间窗提醒","thinning/bagging windows")+"</td></tr>"+
-    "<tr><td>"+T("病害风险","Disease risk")+"</td><td>"+T("预报温湿雨","forecast temp/humidity/rain")+"</td><td>"+T("三种病害侵染气象条件判定","infection-weather rules ×3")+"</td><td>"+T("逐日风险色块 + 用药窗口提示","daily risk colors + spray windows")+"</td></tr>");
+    "<tr><td>"+T("病害风险","Disease risk")+"</td><td>"+T("预报温湿雨","forecast temp/humidity/rain")+"</td><td>"+T("三种病害侵染气象条件判定","infection-weather rules ×3")+"</td><td>"+T("逐日风险色块 + 用药窗口提示","daily risk colors + spray windows")+"</td></tr>"+
+    "<tr><td>"+T("虫害预测","Pest forecast")+"</td><td>"+T("全年积温（7.2℃ 基点）+ 盛花锚点","season degree days (7.2°C) + bloom anchor")+"</td><td>"+T("梨小食心虫世代积温节点比对（175/750/1400 ℃·d）","OFM generation thresholds (175/750/1400 DD)")+"</td><td>"+T("各代防治窗口提醒","per-brood spray windows")+"</td></tr>");
   S(".howto p.note",T("数据源：Open-Meteo（免费开放、免注册）。限制：再分析数据极端低温可能有 1–2℃ 偏差；物候与病害阈值为文献通用口径，正式使用前建议结合科技小院实地观测校准；早凤王、庆丰、中油蟠 9 号需冷量无公开数值，界面显示\"暂无公开数据\"不虚构。","Data source: Open-Meteo (free, open, no sign-up). Limits: reanalysis extreme lows can be off by 1–2°C; phenology and disease thresholds are generic literature values — calibrate against local observation before formal use; chill-hour values are unavailable for a few varieties and are shown as “no public data” rather than invented."));
   /* 更新日志 */
   S("#changelog .sec-head h2",T("更新日志","Changelog"));
@@ -1659,7 +1783,7 @@ function setLang(lang){
   try{ localStorage.setItem("taoyuan-lang", LANG); }catch(e){}
   applyStaticLang();
   buildLocOptions();
-  if(G.fc){ renderF1(); renderF4(); renderF5(); renderF3(); renderCal(); updateHero(); renderPlan(); }
+  if(G.fc){ renderF1(); renderF4(); renderF5(); renderPest(); renderF3(); renderCal(); updateHero(); renderPlan(); }
   renderStats();
 }
 let cdLeft=AUTO_MIN*60;
