@@ -201,6 +201,14 @@ details[open] summary { margin-bottom: 8px; }
 .planmeta { font-size: 12px; color: var(--ink-3); margin-top: 10px; }
 .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
 
+/* 物候人工修正（「我家今天初花/盛花了」上报入口，任务一） */
+#pheno-box { margin-top: 14px; padding: 12px 14px; border: 1px dashed var(--accent-line); border-radius: 10px; background: var(--accent-soft); }
+#pheno-box .pheno-title { font-size: 13.5px; font-weight: 700; }
+#pheno-box .pheno-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+#pheno-box select, #pheno-box input[type="date"] { font-size: 13.5px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fcfcfb; color: var(--ink); font-family: inherit; min-height: 44px; max-width: 100%; transition: border-color .15s, box-shadow .15s; }
+#pheno-box select:focus, #pheno-box input[type="date"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(4,120,87,.12); }
+#pheno-badge { margin-top: 6px; }
+
 /* 月历 */
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .cal-title { font-size: 15px; font-weight: 800; }
@@ -456,6 +464,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
     </div>
     <div class="bento">
       <div class="card span-8 reveal">
+        <div class="badge b-ok" id="cal-pheno" style="display:none;margin-bottom:8px"></div>
         <div class="cal-head">
           <div class="cal-title" id="cal-title"></div>
           <div class="cal-nav">
@@ -506,6 +515,17 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       <div class="card span-7 reveal" id="f1-card">
         <h3><span class="ic">❄️</span>花期防冻 <span class="tagline">开花怕冻，提前几天就知道</span></h3>
         <div class="tool-body" id="f1-body"><p class="muted">正在计算…</p></div>
+        <div id="pheno-box">
+          <div class="pheno-title" id="pheno-title"></div>
+          <span class="badge b-ok" id="pheno-badge" style="display:none"></span>
+          <div class="pheno-row">
+            <select id="pheno-stage"></select>
+            <input type="date" id="pheno-date">
+            <button class="btn-mini primary" id="pheno-submit" onclick="phenoSubmit()"></button>
+            <button class="btn-mini" id="pheno-reset" onclick="phenoReset()" style="display:none"></button>
+          </div>
+          <p class="note" id="pheno-note" style="margin-bottom:0"></p>
+        </div>
         <div class="chart-title">未来 16 天最低温走势（虚线 = 当前阶段 T10）</div>
         <div class="chart-box" id="chart-f1"></div>
         <details>
@@ -596,6 +616,17 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
     </div>
     <div class="card reveal">
       <div class="log-item">
+        <div class="log-ver"><span class="v">v4.2</span><span class="d">2026/09/20</span></div>
+        <div class="log-body">
+          <div class="t">能报花期了：您看到的真花，比模型准</div>
+          <ul>
+            <li>🌱 新增物候上报：在「花期防冻」卡里报一下现蕾/露瓣/初花/盛花和日期，防冻、疏果、套袋、采收的日子全部按您家实况重算</li>
+            <li>🔄 点「恢复气象推算」随时退回；上报按产区分别记忆，刷新或换产区再回来都还在</li>
+            <li>🏷️ 按上报计算时，防冻卡、采收卡、月历都会标注「按您上报的物候计算」</li>
+          </ul>
+        </div>
+      </div>
+      <div class="log-item">
         <div class="log-ver"><span class="v">v4.0</span><span class="d">2026/09/20</span></div>
         <div class="log-body">
           <div class="t">会算水账了，还知道帮你提醒疏果套袋</div>
@@ -642,7 +673,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
 
 <footer>
   <div class="wrap foot-inner">
-    <p>开发：彭宇程 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style="color:var(--ink-3)">（版本 v4.0）</span></p>
+    <p>开发：彭宇程 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style="color:var(--ink-3)">（版本 v4.2）</span></p>
     <div class="links">
       <a href="#plan">推进方案</a>
       <a href="#calendar">月历</a>
@@ -654,10 +685,11 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
 <div class="modal-backdrop" id="welcomeBackdrop" aria-hidden="true"></div>
 <div class="welcome-card" id="welcomeCard" role="dialog" aria-modal="true" aria-labelledby="wc-title" aria-hidden="true">
   <button class="wc-x" id="welcomeClose" aria-label="关闭欢迎卡片">✕</button>
-  <span class="wc-badge">🎉 已更新到 v4.0</span>
+  <span class="wc-badge">🎉 已更新到 v4.2</span>
   <h3 id="wc-title">欢迎使用桃园农事助手</h3>
   <p class="wc-sub">给平谷桃农的免费小助手：什么时候防冻、哪天能采桃、要不要浇水，打开手机就能看。不用注册，不收集任何信息。</p>
   <ul class="wc-list">
+    <li>🌱 可上报自家实际花期，全站日期跟着您家的树走</li>
     <li>💧 新增「要不要浇水」：算清水分账，旱不旱一眼看出</li>
     <li>✂️ 疏果、套袋的日子自动排进农事安排</li>
     <li>📱 可添加到手机主屏幕，信号差也能打开看</li>
@@ -751,7 +783,7 @@ const vName = v => LANG==="zh" ? v[0] : v[1];
 /* ================= 结束参数区 ================= */
 
 const $ = id => document.getElementById(id);
-const G = { fc:null, idxToday:-1, today:null, gddMap:null, bloom:null, loc:0, calY:0, calM:0, events:{} };
+const G = { fc:null, idxToday:-1, today:null, gddMap:null, bloom:null, loc:0, calY:0, calM:0, events:{}, pheno:null, gddOffset:0, bloomRaw:null };
 const CACHE_VER = "v7", CACHE_TTL = 3600 * 1000;
 function cacheGet(k, allowStale){
   try{
@@ -815,6 +847,121 @@ function showToast(msg){
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1600);
 }
 
+/* ---------- 物候人工修正（任务一：我家今天初花/盛花了） ----------
+   模式气温在山区常有 1–2℃ 偏差，桃农在园里看到的真花最准。
+   做法（GDD 偏移法）：用户上报某天所处的物候阶段后，
+     offset = STAGES[所选阶段].gdd − gddMap[上报日]
+     有效积温(日) = gddMap[日] + offset
+     有效盛花日 = 第一个有效积温 ≥ BLOOM_GDD 的日期（花前阶段据此向后推；初花/盛花自然落在上报日附近）
+   覆盖持久化在 localStorage「phenologyOverride:<产区>」（含 date/stage/savedAt），
+   点「恢复气象推算」即清除。G.bloom 的覆盖在 refreshAll 赋值后经 applyPhenoOverride 统一收口，
+   下游 updateHero/buildEvents/buildPlan/renderF3 全部自动跟随；阶段判定走 effStageOf。 */
+function phenoKey(){ return "phenologyOverride:"+G.loc; }
+function phenoGet(){
+  try{
+    const o=JSON.parse(localStorage.getItem(phenoKey())||"null");
+    if(o && /^\d{4}-\d{2}-\d{2}$/.test(o.date||"") && Number.isInteger(o.stage) && STAGES[o.stage]) return o;
+  }catch(e){}
+  return null;
+}
+function phenoSet(date, stage){ try{ localStorage.setItem(phenoKey(), JSON.stringify({date, stage, savedAt:new Date().toISOString()})); }catch(e){} }
+function phenoClear(){ try{ localStorage.removeItem(phenoKey()); }catch(e){} }
+/* 当日有效积温（原始积温 + 偏移）；无上报时与原值一致 */
+function effGddToday(){ return (G.gddMap?(G.gddMap[G.today]||0):0)+(G.gddOffset||0); }
+/* 带偏移的物候阶段判定：buildEvents / buildPlan / renderF1 统一走这里 */
+function effStageOf(){ return stageOf(effGddToday()); }
+/* 把原始积温沿 16 天预报续算到预报期末（未来日按预报温度累加），供上报后向前推盛花日用。
+   下游只读 G.gddMap[G.today]，补出的未来日不影响其他模块。 */
+function extendGddWithForecast(){
+  if(!G.gddMap||!G.fc||!G.fc.daily||G.idxToday<0) return;
+  const t=G.fc.daily.time, tx=G.fc.daily.temperature_2m_max, tn=G.fc.daily.temperature_2m_min;
+  let v=G.gddMap[t[G.idxToday]]; if(v==null) return;
+  for(let i=G.idxToday+1;i<t.length;i++){
+    const a=tx[i], b=tn[i];
+    if(a!=null&&b!=null) v+=Math.max(0,(a+b)/2-4.5);
+    G.gddMap[t[i]]=v;
+  }
+}
+/* 上报日原始积温：先补算预报段；仍取不到（早于 1 月 1 日或超出预报）时钳到最近可得日。
+   反常日期在提交时已另弹 confirm 确认，这里不再拦截。 */
+function rawGddAt(iso){
+  if(!G.gddMap) return null;
+  if(G.gddMap[iso]!=null) return G.gddMap[iso];
+  extendGddWithForecast();
+  if(G.gddMap[iso]!=null) return G.gddMap[iso];
+  const ks=Object.keys(G.gddMap).sort();
+  if(!ks.length) return null;
+  return G.gddMap[iso<ks[0]?ks[0]:ks[ks.length-1]];
+}
+/* refreshAll 里对 G.bloom 赋值后统一调用：有上报则覆盖 G.bloom 与阶段偏移，无/清除后还原气象推算 */
+function applyPhenoOverride(){
+  G.pheno=null; G.gddOffset=0;
+  G.bloom=(G.bloomRaw!=null)?G.bloomRaw:null;
+  const ov=phenoGet();
+  if(!ov||!G.gddMap) return;
+  const base=rawGddAt(ov.date); if(base==null) return;
+  G.pheno=ov; G.gddOffset=STAGES[ov.stage].gdd-base;
+  extendGddWithForecast();
+  const feb1=G.today.slice(0,4)+"-02-01";
+  const start=ov.date<feb1?ov.date:feb1;   /* 上报日在 2 月前（反常年份）也能命中 */
+  let bloom=null;
+  for(const d of Object.keys(G.gddMap).sort()){
+    if(d>=start && G.gddMap[d]+G.gddOffset>=BLOOM_GDD){ bloom=d; break; }
+  }
+  G.bloom=bloom;
+}
+/* 「花期防冻」卡内的上报入口：文案随语言重建，徽标/恢复按钮随 G.pheno 显隐 */
+function renderPhenoBox(){
+  const sel=$("pheno-stage"); if(!sel) return;
+  if(sel.options.length!==STAGES.length || sel.dataset.lang!==LANG){
+    const keep=Number(sel.value||0);
+    sel.innerHTML="";
+    STAGES.forEach((s,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=stName(s); sel.appendChild(o); });
+    sel.value=Math.min(keep,STAGES.length-1);
+    sel.dataset.lang=LANG;
+  }
+  const din=$("pheno-date");
+  if(din && !din.value) din.value=todayISO();   /* 默认今天（按产区时区） */
+  sel.setAttribute("aria-label",T("物候阶段","Phenological stage"));
+  if(din) din.setAttribute("aria-label",T("看到这个阶段的日期","Date you saw it"));
+  $("pheno-title").textContent=T("我家今天初花/盛花了？报一下，全站按您家的实况重算","First bloom / full bloom out there today? Report it — every date then follows your trees");
+  $("pheno-submit").textContent=T("就按这个上报","Report");
+  $("pheno-reset").textContent=T("恢复气象推算","Use weather estimate");
+  const badge=$("pheno-badge");
+  badge.textContent=T("按您上报的物候计算","Using your reported phenology");
+  badge.style.display=G.pheno?"":"none";
+  $("pheno-reset").style.display=G.pheno?"":"none";
+  $("pheno-note").innerHTML=G.pheno
+    ? T("已按您上报的「"+stName(STAGES[G.pheno.stage])+"」（"+fmtDate(G.pheno.date)+" 上报）重算全站日期；点「恢复气象推算」可退回。","Dates are recalculated from your report — "+stName(STAGES[G.pheno.stage])+" seen "+fmtDate(G.pheno.date)+". Tap “Use weather estimate” to go back.")
+    : T("在园里看到的花比任何模型都准：选阶段、填日期、点上报，防冻、疏果、套袋和采收的日子都会照您家的实况重算。","Flowers you see beat any model: pick the stage, set the date and report — frost, thinning, bagging and pick dates all follow your orchard.");
+}
+function phenoSubmit(){
+  const sel=$("pheno-stage"), din=$("pheno-date");
+  const stage=Math.max(0,Math.min(STAGES.length-1,Number(sel.value||0)));
+  const date=(din&&din.value)?din.value:"";
+  if(!date){ showToast(T("请先选一个日期","Pick a date first")); return; }
+  const m=Number(date.slice(5,7));
+  if(m<2||m>5){
+    /* 反常日期（不在 2–5 月花期范围）：二次确认但不阻止 */
+    const ok=confirm(T("您选的日期在 "+m+" 月，不在 2–5 月的花期范围内。确定要按这个日期上报吗？","Your date is in month "+m+", outside the Feb–May bloom window. Report it anyway?"));
+    if(!ok) return;
+  }
+  phenoSet(date, stage);
+  showToast(T("已记录：全站日期按您上报的物候重算","Saved — all dates now follow your report"));
+  reapplyPheno();
+}
+function phenoReset(){
+  phenoClear();
+  showToast(T("已清除上报，恢复气象推算","Report cleared — back to the weather estimate"));
+  reapplyPheno();
+}
+/* 上报/清除后立即重算并重绘（不重新取数，断网也能用） */
+function reapplyPheno(){
+  applyPhenoOverride();
+  renderPhenoBox();
+  if(G.fc){ buildEvents(); renderF1(); renderF4(); renderF5(); renderF3(); renderCal(); updateHero(); renderPlan(); }
+}
+
 /* ---------- 主流程 ---------- */
 async function refreshAll(force){
   try{
@@ -842,6 +989,9 @@ async function refreshAll(force){
     G.gddMap = gdd;
     G.bloom = null;
     for(const d of arc.daily.time){ if(d>=year+"-02-01" && gdd[d]>=BLOOM_GDD){ G.bloom=d; break; } }
+    G.bloomRaw = G.bloom;
+    applyPhenoOverride();   /* 物候人工修正：有上报则覆盖 G.bloom 与阶段判定，无/已清除则保持气象推算 */
+    renderPhenoBox();
     buildEvents();
     renderF1(); renderF4(); renderF5(); renderF3(); renderCal(); updateHero();
     renderF2(force).catch(e=>{ $("f2-body").innerHTML='<p class="err">'+T("今冬气温数据暂时无法获取，请稍后点击「刷新」重试。","Winter temperature data unavailable right now — tap “Refresh” later to retry.")+'</p>'; });
@@ -885,7 +1035,7 @@ function buildEvents(){
   const E = {}; const add=(date,tag)=>{ (E[date]=E[date]||[]).push(tag); };
   const d=G.fc.daily, t=d.time, month=Number(G.today.slice(5,7));
   const inPhase = month>=2 && month<=5;
-  const st = stageOf(G.gddMap?(G.gddMap[G.today]||0):0);
+  const st = effStageOf();   /* 物候人工修正：走带偏移的阶段判定 */
   const L = {
     frost: T("冻","Fr"), brown: T("褐","BR"), scab: T("疮","Sc"), leafcurl: T("缩","LC"), dry: T("旱","Dry"),
     thin: T("疏","Th"), bag: T("袋","Bg"),
@@ -901,7 +1051,7 @@ function buildEvents(){
     if(inPhase && tn<=st.t10) add(date,{k:"frost",cls:"ct-frost",label:L.frost,tip:T("预报最低 "+tn+"℃ ≤ T10("+st.t10+"℃)","Forecast low "+tn+"°C ≤ T10 ("+st.t10+"°C)")});
     if(month>=4&&month<=6&&tm>=13&&wet) add(date,{k:"brown",cls:"ct-brown",label:L.brown,tip:T("满足褐腐病侵染条件","Brown-rot infection weather")});
     if(month>=5&&month<=9&&tm>=16&&wetHi) add(date,{k:"scab",cls:"ct-scab",label:L.scab,tip:T("满足疮痂病侵染条件","Scab infection weather")});
-    if(month>=2&&month<=4&&(G.gddMap?(G.gddMap[G.today]||0)<BLOOM_GDD:true)&&tm>=10&&tm<=21&&wetHi) add(date,{k:"leafcurl",cls:"ct-leafcurl",label:L.leafcurl,tip:T("芽期缩叶病风险","Leaf-curl risk at bud stage")});
+    if(month>=2&&month<=4&&effGddToday()<BLOOM_GDD&&tm>=10&&tm<=21&&wetHi) add(date,{k:"leafcurl",cls:"ct-leafcurl",label:L.leafcurl,tip:T("芽期缩叶病风险","Leaf-curl risk at bud stage")});
     if(p!=null&&p>=1) add(date,{k:"rain",cls:"ct-rain",label:p.toFixed(0)+"mm",tip:T("降水 "+p+"mm","Rain "+p+" mm")});
   }
   if(G.bloom){
@@ -927,7 +1077,7 @@ function buildEvents(){
 function buildPlan(){
   const A=[]; const d=G.fc.daily, t=d.time; const month=Number(G.today.slice(5,7));
   if(month>=2&&month<=5&&G.gddMap){
-    const st=stageOf(G.gddMap[G.today]||0);
+    const st=effStageOf();   /* 物候人工修正：走带偏移的阶段判定 */
     for(let i=G.idxToday+1;i<t.length;i++){
       const tn=d.temperature_2m_min[i]; if(tn==null) continue;
       if(tn<=st.t90) A.push({date:t[i],lv:"red",title:T("今晚到明早：连续熏烟防冻！","Tonight–tomorrow dawn: light smudge fires against frost!"),why:T("预报夜里有 "+tn+"℃，比 "+stName(st)+"期能冻坏九成花的温度（"+st.t90+"℃）还低","Forecast low "+tn+"°C — below the "+stName(st)+" T90 of "+st.t90+"°C that kills nine of ten blooms"),how:T("天黑前在上风口堆柴草暗火冒浓烟（一亩地 4–10 堆），霜前给园子灌一遍水，树下喷水；冻后第二天摘掉冻死的花果、补喷一次杀菌剂，晚点疏果、准备好授粉","Before dark set damp smudge piles upwind (4–10 per mu / ~60–150 per ha), irrigate before the frost and mist under trees; the day after, remove killed bloom, re-spray a fungicide, thin late and get pollen ready for hand pollination")});
@@ -1014,6 +1164,7 @@ function renderCal(){
   if(!G.calY){ const n=new Date(); G.calY=n.getFullYear(); G.calM=n.getMonth(); }
   const y=G.calY, m=G.calM;
   $("cal-title").textContent = T(y+" 年 "+(m+1)+" 月",(m+1)+"/"+y);
+  const cpb=$("cal-pheno"); if(cpb) cpb.style.display=G.pheno?"":"none";   /* 物候人工修正徽标 */
   const startWd=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
   let html=""; for(const w of (LANG==="zh"?["日","一","二","三","四","五","六"]:["Su","Mo","Tu","We","Th","Fr","Sa"])) html+='<div class="cal-wd">'+w+"</div>";
   for(let i=0;i<startWd;i++) html+='<div class="cal-cell dim"></div>';
@@ -1088,7 +1239,7 @@ function renderF1(){
     body.innerHTML='<p class="big"><span class="light l-ok"></span>'+T("现在不是开花季节，不用防冻","It's not bloom season — no frost watch needed")+'</p><p class="muted">'+T("霜冻风险集中在 2–5 月桃树开花前后。想看往年这个时候冻过多少天，点开下面「看看前几年」。","Frost risk clusters around bloom, Feb–May. Curious how frosty past springs were? Open “Past springs” below.")+'</p>';
     $("chart-f1").innerHTML='<p class="muted" style="padding:20px;text-align:center">'+T("2–5 月花期窗口内显示最低温走势与 T10 阈值线","Min-temperature trend and the T10 line appear here during the Feb–May bloom window")+'</p>';
   }else{
-    const st=stageOf(G.gddMap?(G.gddMap[G.today]||0):0);
+    const st=effStageOf();   /* 物候人工修正：走带偏移的阶段判定 */
     let hits=[];
     for(let i=G.idxToday+1;i<d.time.length;i++){ const tn=d.temperature_2m_min[i]; if(tn!=null&&tn<=st.t10) hits.push({d:d.time[i],tn}); }
     const level=hits.some(h=>h.tn<=st.t90)?"red":hits.length?"yellow":"ok";
@@ -1179,7 +1330,7 @@ function renderF3(){
   const v=list[Number(sel.value||0)];
   $("variety-note").textContent=T(v[3],v[4]);
   const body=$("f3-body");
-  if(!G.bloom){ body.innerHTML='<p class="muted">'+T("等春天开花的日子估出来后，这里就显示各品种的采摘时间…","Once this spring's bloom date is estimated, pick windows for each variety appear here…")+'</p>'; return; }
+  if(!G.bloom){ body.innerHTML=(G.pheno?'<p style="margin:0 0 8px"><span class="badge b-ok">'+T("按您上报的物候计算","Using your reported phenology")+"</span></p>":"")+'<p class="muted">'+T("等春天开花的日子估出来后，这里就显示各品种的采摘时间…","Once this spring's bloom date is estimated, pick windows for each variety appear here…")+'</p>'; return; }
   const hd=new Date(G.bloom); hd.setDate(hd.getDate()+v[2]);
   const days=Math.round((hd-new Date())/86400000);
   const w1=new Date(hd); w1.setDate(w1.getDate()-3);
@@ -1189,7 +1340,8 @@ function renderF3(){
   let level="l-ok",word=T("未到采收准备期，正常管理即可","Not in the pick-prep window — normal care for now");
   if(days<0){ word=T("按今年花期推算，本品种采收期已过","By this year's bloom estimate, this variety's pick window has passed"); level="l-gry"; }
   else if(days<=21){ word=T("临近采收期：建议提前安排人手与销路，成熟后择晴天采收","Getting close: book pickers and buyers early, and pick on a dry day once ripe"); level="l-yel"; }
-  body.innerHTML='<p class="big"><span class="light '+level+'"></span>'+word+"</p>"+
+  const phTag=G.pheno?'<p style="margin:0 0 8px"><span class="badge b-ok">'+T("按您上报的物候计算","Using your reported phenology")+"</span></p>":"";
+  body.innerHTML=phTag+'<p class="big"><span class="light '+level+'"></span>'+word+"</p>"+
     '<p class="muted">'+T("花期预估为 <b class=\"mono\">"+G.bloom+"</b> 开花，","Estimated full bloom <b class=\"mono\">"+G.bloom+"</b>; ")+vName(v)+T(" 开花后约 "+v[2]+"  天后成熟，采摘期约为 "," ripens about "+v[2]+" days after bloom; pick window ")+'<b>'+f(w1)+' – '+f(w2)+'</b>'+T("（还有 "+Math.max(0,days)+" 天）"," ("+Math.max(0,days)+" days away)")+'</p>';
   const d=G.fc.daily,t=d.time,cells=[];
   for(let i=G.idxToday;i<t.length&&i<G.idxToday+16;i++){
@@ -1415,6 +1567,9 @@ function applyStaticLang(){
   S("#f1-card details summary",T("看看前几年冻过多少天","How frosty were past springs?"));
   const rbtn=document.querySelector("#f1-replay button");
   if(rbtn) rbtn.textContent=T("调出前三年春天","Load the past three springs");
+  /* 物候人工修正（任务一）：月历徽标文案 + 防冻卡上报入口（标题/按钮/选项/说明都在 renderPhenoBox 内出双语） */
+  const cpb=$("cal-pheno"); if(cpb) cpb.textContent=T("按您上报的物候计算","Using your reported phenology");
+  renderPhenoBox();
   S("#f1-card details:last-of-type p.note",T("数字意思：T10 = 这个温度下约一成花会受冻，T90 = 约九成花受冻。数据来自美国果树产区试验和我国湖北农业部门的防冻指引，比我国口径略宽松，助手取两者中更谨慎的一条来提醒您。各地桃花抗寒力有差异，请结合自家园子情况灵活掌握。","T10 = the temperature at which ~10% of blooms are damaged; T90 = ~90%. Values come from US orchard-region trials and China's Hubei agri-department guidance; the helper uses whichever is more cautious. Hardiness varies by block — adjust for your own orchard."));
   S("#chill h3",T('<span class="ic">😴</span>休眠期低温监测 <span class="tagline">关系春季萌芽整齐度</span>','<span class="ic">😴</span>Winter chill tracking <span class="tagline">drives even spring budbreak</span>'));
   const f2t=document.querySelectorAll("#chill .chart-title");
@@ -1453,6 +1608,10 @@ function applyStaticLang(){
   S("#changelog .sec-head h2",T("更新日志","Changelog"));
   S("#changelog .sec-head p",T("助手隔一阵子就会升级一次，这里记着每一版加了什么新本事。手机上如果看到的还是老样子，刷新一下页面就是最新版。","The assistant gets upgrades every so often; every release is recorded here. If it still looks like the old version, refresh the page."));
   S("#changelog .card",
+    '<div class="log-item"><div class="log-ver"><span class="v">v4.2</span><span class="d">2026/09/20</span></div><div class="log-body"><div class="t">'+T("能报花期了：您看到的真花，比模型准","Report your bloom: real flowers beat the model")+"</div><ul>"+
+    "<li>🌱 "+T("新增物候上报：在「花期防冻」卡里报一下现蕾/露瓣/初花/盛花和日期，防冻、疏果、套袋、采收的日子全部按您家实况重算","New phenology report: in the frost card, report the bud/first-bloom/full-bloom stage and date — frost, thinning, bagging and pick dates all recalculate to your orchard")+"</li>"+
+    "<li>🔄 "+T("点「恢复气象推算」随时退回；上报按产区分别记忆，刷新或换产区再回来都还在","One tap returns to the weather estimate; reports are kept per region and survive refreshes")+"</li>"+
+    "<li>🏷️ "+T("按上报计算时，防冻卡、采收卡、月历都会标注「按您上报的物候计算」","When your report drives the numbers, the frost card, pick card and calendar all say so")+"</li></ul></div></div>"+
     '<div class="log-item"><div class="log-ver"><span class="v">v4.1</span><span class="d">2026/09/20</span></div><div class="log-body"><div class="t">'+T("会说英语了，还把服务范围扩到了著名桃产区","Now speaks English, and covers famous peach regions")+"</div><ul>"+
     "<li>🌐 "+T("中英双语一键切换，首次访问按浏览器语言自动选择","One-tap Chinese/English switch; first visit follows your browser language")+"</li>"+
     "<li>🗺️ "+T("除平谷 10 镇外，新增山东蒙阴、河北深州、美国佐治亚桃县、加州圣华金谷、日本山梨、福岛 6 个著名桃产区（按站点访问量前三国）","Beyond Pinggu's 10 towns: Mengyin (Shandong), Shenzhou (Hebei), Peach County (Georgia, USA), San Joaquin Valley (CA, USA), Yamanashi and Fukushima (Japan) — the top-3 visiting countries")+"</li>"+
@@ -1479,10 +1638,11 @@ function applyStaticLang(){
   S("#stats .chart-title",T("过去 30 天 · 每日访问","Last 30 days · daily page views"));
   /* 欢迎弹窗 */
   S("#welcomeCard",'<button class="wc-x" id="welcomeClose" aria-label="'+T("关闭欢迎卡片","Close welcome card")+'">✕</button>'+
-    '<span class="wc-badge">'+T("🎉 已更新到 v4.1","🎉 Updated to v4.1")+"</span>"+
+    '<span class="wc-badge">'+T("🎉 已更新到 v4.2","🎉 Updated to v4.2")+"</span>"+
     "<h3 id=\"wc-title\">"+T("欢迎使用桃园农事助手","Welcome to Peach Orchard Assistant")+"</h3>"+
     '<p class="wc-sub">'+T("给平谷桃农的免费小助手：什么时候防冻、哪天能采桃、要不要浇水，打开手机就能看。不用注册，不用 Cookie，不收集任何个人信息。","A free helper for peach growers: when to guard against frost, when to pick, whether to water — at a glance on your phone. No sign-up, no cookies, no personal data collected.")+"</p>"+
     '<ul class="wc-list">'+
+    "<li>🌱 "+T("可上报自家实际花期，全站日期跟着您家的树走","Report your orchard's real bloom stage — every date follows your trees")+"</li>"+
     "<li>💧 "+T("新增「要不要浇水」：算清水分账，旱不旱一眼看出","New water balance: the deficit at a glance")+"</li>"+
     "<li>✂️ "+T("疏果、套袋的日子自动排进农事安排","Thinning & bagging days land in your plan")+"</li>"+
     "<li>🗺️ "+T("新增美国、日本著名桃产区，中英双语","US & Japanese peach regions added; now bilingual")+"</li>"+
@@ -1490,7 +1650,7 @@ function applyStaticLang(){
     '<div class="wc-btns"><button class="btn btn-primary" id="welcomeStart">'+T("开始使用","Get started")+'</button><button class="btn btn-ghost" id="welcomeLater">'+T("稍后再看","Later")+'</button></div>'+
     '<p class="wc-foot">'+T("每次升级加了什么，拉到底部「更新日志」都能查到。","Every release is logged at the bottom under “Changelog”.")+"</p>");
   /* 页脚 */
-  S("footer .foot-inner p",T("开发：彭宇程 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style=\"color:var(--ink-3)\">（版本 v4.1）</span>","Built by Peng Yucheng · China Agricultural University summer field team. Free to use; data refreshes every 30 minutes, or tap refresh. Advice is for reference — for major decisions consult your local plant-protection service. <span style=\"color:var(--ink-3)\">(v4.1)</span>"));
+  S("footer .foot-inner p",T("开发：彭宇程 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style=\"color:var(--ink-3)\">（版本 v4.2）</span>","Built by Peng Yucheng · China Agricultural University summer field team. Free to use; data refreshes every 30 minutes, or tap refresh. Advice is for reference — for major decisions consult your local plant-protection service. <span style=\"color:var(--ink-3)\">(v4.2)</span>"));
   S("footer .links",'<a href="#plan">'+T("推进方案","Plan")+'</a><a href="#calendar">'+T("月历","Calendar")+'</a><a href="#howto">'+T("说明","About")+"</a>");
 }
 function setLang(lang){
@@ -1512,7 +1672,7 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&G.fc) re
 (function initLoc(){
   const sel=$("loc");
   buildLocOptions();
-  sel.addEventListener("change",()=>{ G.loc=Number(sel.value); refreshAll(true); });
+  sel.addEventListener("change",()=>{ G.loc=Number(sel.value); const pd=$("pheno-date"); if(pd) pd.value=todayISO(); refreshAll(true); });
 })();
 /* 语言分段按钮：点哪个切哪个，当前的高亮 */
 document.querySelectorAll(".lang-switch .lang-opt").forEach(b=>{
@@ -1566,7 +1726,7 @@ try{
 
 /* ---------- 欢迎弹窗：每个新版本首次打开时出现一次 ---------- */
 (function(){
-  const WELCOME_VER = "v4.1";   /* 发新版时：改这里 + 更新「更新日志」区块 */
+  const WELCOME_VER = "v4.2";   /* 发新版时：改这里 + 更新「更新日志」区块 */
   const card=$("welcomeCard"), backdrop=$("welcomeBackdrop");
   if(!card||!backdrop) return;
   let seen=null; try{ seen=localStorage.getItem("welcomeSeen"); }catch(e){}
