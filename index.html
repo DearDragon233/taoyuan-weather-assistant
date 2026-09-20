@@ -199,6 +199,8 @@ details[open] summary { margin-bottom: 8px; }
 .btn-mini.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-mini.primary:hover { background: #065f46; color: #fff; }
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+/* 窄屏防溢出：临界温度表等宽列较多，允许卡片内横向滚动而不是顶破页面（375px 检出 5px 溢出） */
+#f1-card table.tb, #pest details table.tb { display: block; overflow-x: auto; }
 .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .kpi { background: #f5f5f4; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
 .kpi .kv { font-size: 22px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
