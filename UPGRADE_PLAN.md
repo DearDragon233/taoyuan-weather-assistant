@@ -32,6 +32,7 @@
 ### v4.1（已落地 2026-09-20）
 1. ✅ **中英双语**：`T(zh,en)` 双语函数 + `applyStaticLang()` 静态文案切换，首次访问按浏览器语言选择
 2. ✅ **多产区扩展**：按站点访问量前三国（中国/美国/日本）各选 2 个著名桃产区；地区表 `LOCATIONS` 带国家码与时区，`VARIETIES_BY` 品种表按国家切换；如与 Cloudflare 后台实际前三不符，改参数区即可
+3. ✅ **访问统计**：「这个月有多少人在用」区块，Pages Function（`functions/api/stats.js`）读 Cloudflare Web Analytics 聚合数字，密钥留在服务端，未配置时安全降级（开启步骤见 DEPLOY.md）
 
 ### v4.2（建议 2–4 周）
 3. **数据留痕与校准**：把每年实测盛花日/采收日记进 localStorage，次年用实测值替代积温估算（`G.bloom` 支持「用户校准」来源标记）
