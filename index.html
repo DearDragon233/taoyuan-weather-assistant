@@ -950,11 +950,6 @@ function buildPlan(){
   A.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.lv==="red"?-1:b.lv==="red"?1:0));
   return A;
 }
-  if(month===11) A.push({date:G.today,lv:"yel",title:"上冻前浇一遍封冻水",why:"「夜冻昼消」的这几天浇透封冻水，桃树抗冻、来年春天墒情也好",how:"日平均气温降到 3–5℃、夜里有冰白天能化的时候浇，浇到渗透为止；别拖到水渗不完就上冻"});
-  if(month>=11||month<=2) A.push({date:G.today,lv:"ok",title:"冬天：留意桃树睡了多久",why:"冬天攒低温的天数，决定春天开花齐不齐",how:"到 2 月底还差得多的年份，春天开花会乱，提前备好人工授粉的花粉和工具"});
-  A.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.lv==="red"?-1:b.lv==="red"?1:0));
-  return A;
-}
 function renderPlan(){
   const items=buildPlan(); const body=$("plan-body");
   if(!items.length){
