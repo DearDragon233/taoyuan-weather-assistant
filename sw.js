@@ -9,9 +9,9 @@
  *  - 其他跨域请求一律不处理。
  *
  * 维护提示：改动 index.html 或静态资源后，请把下面的 CACHE_VERSION 版本号 +1
- * （如 taoyuan-shell-v2 -> taoyuan-shell-v2），旧缓存会在 activate 时自动清理。
+ * （如 taoyuan-shell-v3 -> taoyuan-shell-v2），旧缓存会在 activate 时自动清理。
  */
-const CACHE_VERSION = "taoyuan-shell-v2";
+const CACHE_VERSION = "taoyuan-shell-v3";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
