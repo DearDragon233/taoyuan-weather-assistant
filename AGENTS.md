@@ -19,9 +19,9 @@
 ## 工作流程
 
 ```
-1. 读 UPGRADE_PLAN.md，认领一个方向（或在 issue 里立新项）
+1. 读 TASKS.md（当前任务书），认领一个任务
 2. git checkout -b feat/<名字>（从 upgrade/v4 拉出）
-3. 改动 → 自测 → 独立提交（中文 commit message，一个功能一个提交）
+3. 改动 → 按 TASKS.md 验收标准自测 → 独立提交（中文 commit message，一个功能一个提交）
 4. 不 push、不 merge —— 留给维护者审查合并
 ```
 
