@@ -30,9 +30,15 @@ Cloudflare Pages 已连接该仓库时推送即自动上线；若用直接上传
 - 部署包现在还包含 `sw.js`、`manifest.webmanifest` 和 `icons/`，Cloudflare Pages 连仓库部署时会一并上线，无需任何额外配置；用直接上传模式时把这几个文件和 icons 文件夹一起拖上去。
 - 改版 index.html 或更新静态资源后，**记得把 `sw.js` 里的缓存版本号随手 +1**（`taoyuan-shell-v5` → `taoyuan-shell-v6`）：页面导航走 network-first 能及时拿到新版，但预缓存的外壳资源靠版本号触发旧缓存清理，不改版本号老用户可能一直用旧图标/旧清单。
 
-### 访问统计（/api/stats）开启步骤
+### 访问统计（「这个月有多少人在用」区块）
 
-网页「这个月有多少人在用」区块由 Cloudflare Pages Function（`functions/api/stats.js`）读取 Cloudflare Web Analytics 的聚合数字，**不需要数据库，密钥不下发前端**。开启：
+**当前方式：手工更新（默认）**。打开 `index.html` 参数区的 `STATS_MANUAL`，把 `pvText` 改成 Cloudflare 后台看到的数字、`updated` 改成更新日期，推送即上线：
+
+```js
+const STATS_MANUAL = { pvText: "2.06k", updated: "2026/09/20" };
+```
+
+**可选升级：自动接口**。网页的 `/api/stats`（`functions/api/stats.js`）能读 Cloudflare Web Analytics 的每日聚合数字，自动画出 30 天曲线，密钥不下发前端。开启步骤：
 
 1. Pages 项目 → **Web Analytics → Enable**（自动注入无 Cookie 统计代码）
 2. 打开 dash.cloudflare.com → Web Analytics 页面，从浏览器地址栏复制**站点 tag**（`?siteTag=xxx` 那串）

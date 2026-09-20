@@ -665,6 +665,9 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
 document.documentElement.classList.add("js");
 /* ================= 参数区（给维护者：改这里即可，界面不受影响） ================= */
 const AUTO_MIN = 30, BLOOM_GDD = 200;
+/* 访问量手工数据：从 Cloudflare 后台看到新数字后改这里（推线上后网页即更新）。
+   若将来在部署端配置了自动统计密钥（见 DEPLOY.md），这里会被每日自动曲线取代 */
+const STATS_MANUAL = { pvText: "2.06k", updated: "2026/09/20" };
 /* 语言：zh/en。记忆在本地，首次访问按浏览器语言选择 */
 let LANG = "zh";
 try{ LANG = localStorage.getItem("taoyuan-lang") || ((navigator.language||"").toLowerCase().startsWith("zh")?"zh":"en"); }catch(e){}
@@ -1296,7 +1299,13 @@ async function renderStats(){
     }catch(e){}
   }
   if(!data){
-    body.innerHTML='<p class="muted">'+T("访问统计暂未开启：需要在部署端配置 Cloudflare 统计密钥（见 DEPLOY.md），配置好后这里会自动出现。工具本身不受影响。","Visit stats aren't enabled yet — server-side Cloudflare keys are needed (see DEPLOY.md). They'll appear here once configured; the tools themselves are unaffected.")+"</p>";
+    /* 自动统计未配置：显示维护者手工更新的数字（STATS_MANUAL，参数区可改） */
+    const m=STATS_MANUAL;
+    body.innerHTML='<div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">'+
+        '<div class="kpi"><div class="kv">'+m.pvText+'</div><div class="kl">'+T("过去一个月访问","Visits, past month")+"</div></div>"+
+        '<div class="kpi"><div class="kv" style="font-size:16px;padding-top:4px">'+m.updated+'</div><div class="kl">'+T("数字手工更新于","manual update as of")+"</div></div>"+
+      "</div>"+
+      '<p class="note">'+T("来自 Cloudflare 隐私友好统计（不用 Cookie、不含个人信息），由维护者定期手工更新。","From Cloudflare's privacy-friendly analytics (no cookies, no personal data), updated by the maintainer from time to time.")+"</p>";
     chart.innerHTML=""; return;
   }
   const days=data.days;
@@ -1434,7 +1443,7 @@ function applyStaticLang(){
     "<li>🗺️ "+T("除平谷 10 镇外，新增山东蒙阴、河北深州、美国佐治亚桃县、加州圣华金谷、日本山梨、福岛 6 个著名桃产区（按站点访问量前三国）","Beyond Pinggu's 10 towns: Mengyin (Shandong), Shenzhou (Hebei), Peach County (Georgia, USA), San Joaquin Valley (CA, USA), Yamanashi and Fukushima (Japan) — the top-3 visiting countries")+"</li>"+
     "<li>🍑 "+T("品种表按国家切换：美国 Redhaven、Elberta 等，日本 白凤、あかつき 等","Variety lists switch by country: Redhaven/Elberta (US), Hakuhou/Akatsuki (JP)")+"</li>"+
     "<li>⏰ "+T("各产区按当地时区取数与排日程","Each region fetches and schedules in its own timezone")+"</li>"+
-    "<li>📊 "+T("新增「这个月有多少人在用」：网页上直接看过去 30 天访问量（Cloudflare 无 Cookie 匿名统计，密钥留在服务端）","New traffic panel: last-30-days page views on the page itself (cookieless Cloudflare analytics, keys stay server-side)")+"</li></ul></div></div>"+
+    "<li>📊 "+T("新增「这个月有多少人在用」：显示过去 30 天访问量（当前为手工更新数字，来自 Cloudflare 无 Cookie 匿名统计；也可配置自动接口转每日曲线）","New traffic panel: past-30-days visits (manual figure from Cloudflare's cookieless analytics; an automatic daily-feed option is also built in)")+"</li></ul></div></div>"+
     '<div class="log-item"><div class="log-ver"><span class="v">v4.0</span><span class="d">2026/09/20</span></div><div class="log-body"><div class="t">'+T("会算水账了，还知道帮你提醒疏果套袋","Water balance, plus thinning & bagging reminders")+"</div><ul>"+
     "<li>💧 "+T("新增「要不要浇水」模块：把近 30 天降雨和桃树喝掉的水算成一笔水分账，旱不旱一眼看出，还能结合 7 天预报告诉你「等多久、补多少」","New water-balance module: 30-day rain vs. tree water use at a glance, with \"wait or water, and how much\" from the 7-day forecast")+"</li>"+
     "<li>✂️ "+T("疏果、套袋的日子自动排进农事安排和月历（盛花后 25 天疏果、35 天套袋、56 天收尾）","Thinning and bagging days land in the plan and calendar (bloom +25/35/56 d)")+"</li>"+
