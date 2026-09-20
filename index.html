@@ -1343,9 +1343,10 @@ function applyStaticLang(){
   /* 导航（桌面 + 抽屉） */
   const NV={plan:["推进方案","Plan"],calendar:["农事月历","Calendar"],frost:["冻害","Frost"],chill:["需冷量","Chill"],harvest:["采收","Pick"],irrigation:["灌溉","Water"],disease:["病害","Disease"],changelog:["更新日志","Changelog"],howto:["说明","About"]};
   for(const id in NV){
-    document.querySelectorAll('.nav-links a[href="#'+id+'"]').forEach(a=>a.textContent=NV[id][1]);
+    const li=LANG==="zh"?0:1;   /* NV 每项 [中文, 英文]，按当前语言取 */
+    document.querySelectorAll('.nav-links a[href="#'+id+'"]').forEach(a=>a.textContent=NV[id][li]);
     const EMO={plan:"🧭 ",calendar:"🗓 ",frost:"❄️ ",chill:"😴 ",harvest:"📅 ",irrigation:"💧 ",disease:"🦠 ",changelog:"📝 ",howto:"ℹ️ "};
-    document.querySelectorAll('.nav-drawer a[href="#'+id+'"]').forEach(a=>{ a.childNodes[a.childNodes.length-1].nodeValue=EMO[id]+NV[id][1]; });
+    document.querySelectorAll('.nav-drawer a[href="#'+id+'"]').forEach(a=>{ a.childNodes[a.childNodes.length-1].nodeValue=EMO[id]+NV[id][li]; });
   }
   const lb=$("langBtn"); if(lb) lb.textContent=LANG==="zh"?"EN":"中文";
   const lbm=$("langBtnM"); if(lbm) lbm.textContent=LANG==="zh"?"🌐 English":"🌐 中文";
