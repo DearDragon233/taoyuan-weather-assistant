@@ -1292,7 +1292,7 @@ try{
     try{ localStorage.setItem("welcomeSeen", WELCOME_VER); }catch(e){}
   }
   if(seen!==WELCOME_VER) setTimeout(openCard, 900);   /* 等首屏数据先渲染，再弹卡片 */
-  $("welcomeStart").addEventListener("click", ()=>{ closeCard(); const p=$("plan"); if(p) p.scrollIntoView({behavior:"smooth"}); });
+  $("welcomeStart").addEventListener("click", ()=>{ closeCard(); location.hash="plan"; const p=$("plan"); if(p) p.scrollIntoView({behavior:"smooth"}); });
   $("welcomeClose").addEventListener("click", closeCard);
   $("welcomeLater").addEventListener("click", closeCard);
   backdrop.addEventListener("click", closeCard);
