@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>桃园农事气象助手 | 平谷大桃种植者的免费决策工具</title>
 <meta name="description" content="给平谷桃农的免费农事气象小助手：什么时候防冻、什么时候醒芽、哪天能采桃、什么时候防病，打开手机就能看。数据来自公开气象服务，全部计算在您自己的手机上完成，不用注册、不用安装。">
+<meta name="theme-color" content="#047857">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="桃园助手">
 <style>
 /* ============ 设计令牌（沿用 biohub 设计语言） ============ */
 :root {
@@ -1162,6 +1169,17 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&G.fc) re
   },{threshold:0.12});
   els.forEach(el=>io.observe(el));
 })();
+
+/* ---------- PWA：注册 Service Worker（离线兜底） ---------- */
+/* 只在 https 或 localhost 环境注册；用户直接双击 index.html（file://）打开时静默跳过，绝不报错 */
+try{
+  if("serviceWorker" in navigator &&
+     (location.protocol==="https:" || location.hostname==="localhost" || location.hostname==="127.0.0.1")){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").catch(function(){ /* 注册失败不影响页面功能 */ });
+    });
+  }
+}catch(e){ /* 浏览器不支持 SW：静默跳过 */ }
 
 refreshAll(false);
 </script>

@@ -1,0 +1,31 @@
+{
+  "name": "桃园农事气象助手",
+  "short_name": "桃园助手",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "theme_color": "#047857",
+  "background_color": "#fafaf9",
+  "description": "给平谷桃农的免费农事气象小助手：什么时候防冻、什么时候醒芽、哪天能采桃、什么时候防病，打开手机就能看。数据来自公开气象服务，全部计算在您自己的手机上完成，不用注册、不用安装。",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

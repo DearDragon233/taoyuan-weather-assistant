@@ -44,6 +44,7 @@ npx serve .   # 本地预览
 - **数据源**：[Open-Meteo](https://open-meteo.com/) 开放接口（预报/历史归档/小时级，免注册，CORS 开放），前端直连、带 3 次退避重试与历史数据兜底
 - **模型参数**：花芽冻害临界温度（Penn State Ext./WSU 1989 + 湖北省农业农村厅双口径）、品种需冷量与果实发育期（《果树栽培实用新技术》等文献）、病害侵染气象条件（PNW 手册/Texas A&M）
 - **零依赖**：原生 HTML/CSS/JS 单文件，SVG 图表手绘，移动端优先适配（触控目标 ≥44px、安全区、汉堡抽屉导航）
+- **PWA**：支持「添加到主屏幕」像 App 一样打开；Service Worker 缓存页面外壳，弱网/离线时仍能打开页面看上次的数据（导航 network-first、静态资源 cache-first，Open-Meteo 接口不做拦截，数据由页面 localStorage 兜底）
 
 ## 项目背景
 
