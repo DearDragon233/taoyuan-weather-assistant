@@ -236,6 +236,43 @@ details[open] summary { margin-bottom: 8px; }
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(16px); background: var(--ink); color: #fff; font-size: 13px; padding: 9px 18px; border-radius: 999px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 80; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* 欢迎弹窗（每次升版本首次打开时出现） */
+body.modal-open { overflow: hidden; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(28,25,23,.45); z-index: 110; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.modal-backdrop.show { opacity: 1; pointer-events: auto; }
+.welcome-card { position: fixed; z-index: 120; left: 50%; top: 50%; width: min(92vw, 430px); max-height: 86vh; overflow-y: auto;
+  transform: translate(-50%, -46%) scale(.96); background: var(--surface); border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(28,25,23,.28); padding: 26px 24px 20px; opacity: 0; pointer-events: none;
+  transition: opacity .28s, transform .28s cubic-bezier(.16,1,.3,1); }
+.welcome-card.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+.wc-x { position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink-3); font-size: 15px; cursor: pointer; transition: all .15s; }
+.wc-x:hover { border-color: var(--accent); color: var(--accent); }
+.wc-badge { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft);
+  border: 1px solid var(--accent-line); border-radius: 999px; padding: 3px 12px; margin-bottom: 12px; }
+.welcome-card h3 { font-size: 21px; font-weight: 800; letter-spacing: -.02em; padding-right: 40px; }
+.wc-sub { margin-top: 8px; font-size: 13.5px; color: var(--ink-2); }
+.wc-list { margin: 14px 0 4px; padding: 12px 14px; background: #fafaf9; border: 1px solid var(--line); border-radius: 12px;
+  list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.wc-list li { font-size: 13.5px; color: var(--ink); padding-left: 2px; }
+.wc-btns { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.wc-foot { margin-top: 12px; font-size: 11.5px; color: var(--ink-3); }
+
+/* 更新日志时间线 */
+.log-item { display: flex; gap: 16px; padding: 16px 2px; border-bottom: 1px solid var(--line); }
+.log-item:last-child { border-bottom: none; }
+.log-ver { flex: 0 0 86px; }
+.log-ver .v { display: inline-block; font-weight: 800; font-size: 14px; color: var(--accent); font-family: var(--mono); }
+.log-ver .d { display: block; font-size: 11px; color: var(--ink-3); margin-top: 3px; }
+.log-body { flex: 1; min-width: 0; }
+.log-body .t { font-size: 14.5px; font-weight: 700; }
+.log-body ul { margin: 6px 0 0 1.2em; font-size: 13px; color: var(--ink-2); }
+.log-body li { margin: 3px 0; }
+@media (max-width: 620px) {
+  .log-item { flex-direction: column; gap: 4px; }
+  .log-ver { flex: none; display: flex; align-items: baseline; gap: 8px; }
+}
+
 /* howto 表 */
 .howto table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .howto th, .howto td { text-align: left; padding: 11px 13px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -319,6 +356,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       <a href="#harvest">采收</a>
       <a href="#irrigation">灌溉</a>
       <a href="#disease">病害</a>
+      <a href="#changelog">更新日志</a>
       <a href="#howto">说明</a>
     </div>
   </div>
@@ -370,6 +408,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
   <a href="#harvest">📅 采收窗口</a>
   <a href="#irrigation">💧 浇水决策</a>
   <a href="#disease">🦠 病害风险</a>
+  <a href="#changelog">📝 更新日志</a>
   <a href="#howto">ℹ️ 使用说明</a>
   <div class="drawer-foot">桃园农事气象助手</div>
 </aside>
@@ -529,6 +568,44 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       </p>
     </div>
   </section>
+
+  <!-- ============ 更新日志 ============ -->
+  <section id="changelog">
+    <div class="sec-head reveal">
+      <h2>更新日志</h2>
+      <p>助手隔一阵子就会升级一次，这里记着每一版加了什么新本事。手机上如果看到的还是老样子，刷新一下页面就是最新版。</p>
+    </div>
+    <div class="card reveal">
+      <div class="log-item">
+        <div class="log-ver"><span class="v">v4.0</span><span class="d">2026/09/20</span></div>
+        <div class="log-body">
+          <div class="t">会算水账了，还知道帮你提醒疏果套袋</div>
+          <ul>
+            <li>💧 新增「要不要浇水」模块：把近 30 天降雨和桃树喝掉的水算成一笔水分账，旱不旱一眼看出，还能结合 7 天预报告诉你「等多久、补多少」</li>
+            <li>✂️ 疏果、套袋的日子自动排进农事安排和月历（盛花后 25 天疏果、35 天套袋、56 天收尾）</li>
+            <li>💧 11 月上冻前提醒浇封冻水</li>
+            <li>📤 农事安排一键分享给微信好友（手机上直接弹分享面板）</li>
+            <li>📱 支持把网页「添加到主屏幕」像 App 一样打开，信号差也能看最近一次的数据</li>
+          </ul>
+        </div>
+      </div>
+      <div class="log-item">
+        <div class="log-ver"><span class="v">v3.5</span><span class="d">2026/09/11</span></div>
+        <div class="log-body">
+          <div class="t">首个公开版本</div>
+          <ul>
+            <li>🧭 农事推进方案：四路信号合成按日期排序的行动清单，一键复制发微信群</li>
+            <li>❄️ 花期冻害预警：物候积温 × 临界温度表，红黄绿灯加具体动作</li>
+            <li>😴 休眠期低温监测：对照品种需冷量，暖冬年提前提示</li>
+            <li>📅 采收窗口预测：11 个品种采摘日历 + 降雨择晴</li>
+            <li>🦠 病害风险日历：褐腐/缩叶/疮痂逐日判定</li>
+            <li>🗓 农事月历：整月视图、事件标签、跨月翻页</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note">以后每次升级都会把新加的功能记在这里，并在打开网页时弹窗告诉大家。</p>
+    </div>
+  </section>
 </main>
 
 <footer>
@@ -541,6 +618,24 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
     </div>
   </div>
 </footer>
+
+<div class="modal-backdrop" id="welcomeBackdrop" aria-hidden="true"></div>
+<div class="welcome-card" id="welcomeCard" role="dialog" aria-modal="true" aria-labelledby="wc-title" aria-hidden="true">
+  <button class="wc-x" id="welcomeClose" aria-label="关闭欢迎卡片">✕</button>
+  <span class="wc-badge">🎉 已更新到 v4.0</span>
+  <h3 id="wc-title">欢迎使用桃园农事助手</h3>
+  <p class="wc-sub">给平谷桃农的免费小助手：什么时候防冻、哪天能采桃、要不要浇水，打开手机就能看。不用注册，不收集任何信息。</p>
+  <ul class="wc-list">
+    <li>💧 新增「要不要浇水」：算清水分账，旱不旱一眼看出</li>
+    <li>✂️ 疏果、套袋的日子自动排进农事安排</li>
+    <li>📱 可添加到手机主屏幕，信号差也能打开看</li>
+  </ul>
+  <div class="wc-btns">
+    <button class="btn btn-primary" id="welcomeStart">开始使用</button>
+    <button class="btn btn-ghost" id="welcomeLater">稍后再看</button>
+  </div>
+  <p class="wc-foot">每次升级加了什么，拉到底部「更新日志」都能查到。</p>
+</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -1180,6 +1275,29 @@ try{
     });
   }
 }catch(e){ /* 浏览器不支持 SW：静默跳过 */ }
+
+/* ---------- 欢迎弹窗：每个新版本首次打开时出现一次 ---------- */
+(function(){
+  const WELCOME_VER = "v4.0";   /* 发新版时：改这里 + 更新「更新日志」区块 */
+  const card=$("welcomeCard"), backdrop=$("welcomeBackdrop");
+  if(!card||!backdrop) return;
+  let seen=null; try{ seen=localStorage.getItem("welcomeSeen"); }catch(e){}
+  function openCard(){
+    card.classList.add("show"); backdrop.classList.add("show");
+    card.setAttribute("aria-hidden","false"); document.body.classList.add("modal-open");
+  }
+  function closeCard(){
+    card.classList.remove("show"); backdrop.classList.remove("show");
+    card.setAttribute("aria-hidden","true"); document.body.classList.remove("modal-open");
+    try{ localStorage.setItem("welcomeSeen", WELCOME_VER); }catch(e){}
+  }
+  if(seen!==WELCOME_VER) setTimeout(openCard, 900);   /* 等首屏数据先渲染，再弹卡片 */
+  $("welcomeStart").addEventListener("click", ()=>{ closeCard(); const p=$("plan"); if(p) p.scrollIntoView({behavior:"smooth"}); });
+  $("welcomeClose").addEventListener("click", closeCard);
+  $("welcomeLater").addEventListener("click", closeCard);
+  backdrop.addEventListener("click", closeCard);
+  window.addEventListener("keydown", e=>{ if(e.key==="Escape"&&card.classList.contains("show")) closeCard(); });
+})();
 
 refreshAll(false);
 </script>
