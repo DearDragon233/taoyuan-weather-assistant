@@ -614,6 +614,19 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       <p class="note">以后每次升级都会把新加的功能记在这里，并在打开网页时弹窗告诉大家。</p>
     </div>
   </section>
+
+  <!-- ============ 访问统计 ============ -->
+  <section id="stats">
+    <div class="sec-head reveal">
+      <h2>这个月有多少人在用</h2>
+      <p>过去 30 天的访问情况。数据来自 Cloudflare 隐私友好统计：不用 Cookie、不含个人信息，只显示汇总数字。</p>
+    </div>
+    <div class="card reveal">
+      <div id="stats-body"><p class="muted">正在取访问数据…</p></div>
+      <div class="chart-title">过去 30 天 · 每日访问</div>
+      <div class="chart-box" id="stats-chart"></div>
+    </div>
+  </section>
 </main>
 
 <footer>
@@ -1270,6 +1283,44 @@ function renderF5(){
     '<p class="note">'+T("mm 就是「一亩地积 1 毫米深的水」，1 mm ≈ 每亩 0.67 立方水。需水按参考蒸发量 ET₀ × 桃树各月系数折算（6–8 月果期最大），降雨按 75% 算有效。","1 mm of rain ≈ 1 L per m² (≈ 10 m³ per ha). Water use = reference ET₀ × peach crop coefficient by month (peaks Jun–Aug); 75% of rain counts as effective.")+"</p>";
 }
 
+/* ---------- 访问统计（过去 30 天，聚合数字） ---------- */
+async function renderStats(){
+  const body=$("stats-body"), chart=$("stats-chart");
+  if(!body) return;
+  let data=cacheGet("stats30");
+  if(!data){
+    try{
+      const r=await fetch("api/stats");
+      const j=await r.json();
+      if(j&&j.ok&&j.days&&j.days.length){ cacheSet("stats30", j); data=j; }
+    }catch(e){}
+  }
+  if(!data){
+    body.innerHTML='<p class="muted">'+T("访问统计暂未开启：需要在部署端配置 Cloudflare 统计密钥（见 DEPLOY.md），配置好后这里会自动出现。工具本身不受影响。","Visit stats aren't enabled yet — server-side Cloudflare keys are needed (see DEPLOY.md). They'll appear here once configured; the tools themselves are unaffected.")+"</p>";
+    chart.innerHTML=""; return;
+  }
+  const days=data.days;
+  const total=days.reduce((s,d)=>s+d.pv,0);
+  const avg=Math.round(total/days.length);
+  const top=days.reduce((m,d)=>d.pv>m.pv?d:m,days[0]);
+  const fdate=iso=>LANG==="zh"?Number(iso.slice(5,7))+" 月 "+Number(iso.slice(8))+" 日":Number(iso.slice(5,7))+"/"+Number(iso.slice(8));
+  body.innerHTML='<div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">'+
+      '<div class="kpi"><div class="kv">'+total.toLocaleString()+'</div><div class="kl">'+T("近 30 天访问（PV）","Page views, 30 days")+"</div></div>"+
+      '<div class="kpi"><div class="kv">'+avg.toLocaleString()+'</div><div class="kl">'+T("日均","Daily average")+"</div></div>"+
+      '<div class="kpi"><div class="kv" style="font-size:16px;padding-top:4px">'+fdate(top.date)+'</div><div class="kl">'+T("最忙的一天（"+top.pv+" 次）","Busiest day ("+top.pv+" views)")+"</div></div>"+
+    "</div>";
+  const W=420,H=120,pb=18,bw=(W-8)/days.length;
+  const mx=Math.max(1,...days.map(d=>d.pv));
+  let s='<svg viewBox="0 0 '+W+" "+H+'" role="img" aria-label="'+T("过去 30 天每日访问量柱状图","Daily page views, last 30 days")+'">';
+  days.forEach((d,i)=>{
+    const bh=(d.pv/mx)*(H-pb-12);
+    s+='<rect x="'+(4+i*bw)+'" y="'+(H-pb-bh)+'" width="'+(bw*0.72).toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="2.5" fill="#047857" opacity=".8"><title>'+d.date+"： "+d.pv+'</title></rect>';
+    if(i%5===0) s+='<text x="'+(4+i*bw+bw*0.36).toFixed(1)+'" y="'+(H-5)+'" font-size="8" fill="#a8a29e" text-anchor="middle">'+d.date.slice(5).replace("-","/")+"</text>";
+  });
+  s+="</svg>";
+  chart.innerHTML=s;
+}
+
 /* ---------- 初始化：语言应用 / 地区选择器 ---------- */
 function buildLocOptions(){
   const sel=$("loc"); const cur=G.loc; sel.innerHTML="";
@@ -1362,7 +1413,7 @@ function applyStaticLang(){
   if(calT){ calT.textContent=T("今","Now"); calT.setAttribute("aria-label",T("本月","This month")); }
   /* 工作原理 */
   S("#howto .sec-head h2",T("这本助手是怎么算出来的","How the helper computes its advice"));
-  S("#howto .sec-head p",T("助手不含任何收费项目：气象数据取自公开的 Open-Meteo 服务（免费、不用注册），全部计算在您手机或电脑上完成，不收集任何信息。可以离线保存页面，联网时自动更新数据。","The helper charges nothing: weather comes from the open Open-Meteo service (free, no sign-up), and all computation happens on your device. Nothing is collected. Save the page for offline use — it refreshes when online."));
+  S("#howto .sec-head p",T("助手不含任何收费项目：气象数据取自公开的 Open-Meteo 服务（免费、不用注册），全部计算在您手机或电脑上完成，不收集任何个人信息（访问统计为无 Cookie 的匿名汇总）。可以离线保存页面，联网时自动更新数据。","The helper charges nothing: weather comes from the open Open-Meteo service (free, no sign-up), and all computation happens on your device. No personal data is collected (visit stats are cookieless aggregate counts). Save the page for offline use — it refreshes when online."));
   S(".howto table",'<tr><th>'+T("模块","Module")+'</th><th>'+T("输入（开放数据）","Input (open data)")+'</th><th>'+T("计算","Computation")+'</th><th>'+T("输出","Output")+"</th></tr>"+
     "<tr><td>"+T("推进方案","Action plan")+"</td><td>"+T("下面几路结果","signals from the modules below")+"</td><td>"+T("规则引擎合成：按日期排序、去重、定优先级","rule engine: sort, dedupe, prioritise")+"</td><td>"+T("行动清单（可复制分享）","shareable checklist")+"</td></tr>"+
     "<tr><td>"+T("农事月历","Farm calendar")+"</td><td>"+T("16 天预报 + 采收推算","16-day forecast + pick estimates")+"</td><td>"+T("日期→事件标签映射，跨月翻页","date→event mapping, month paging")+"</td><td>"+T("整月视图 + 月度统计","month view + stats")+"</td></tr>"+
@@ -1381,7 +1432,8 @@ function applyStaticLang(){
     "<li>🌐 "+T("中英双语一键切换，首次访问按浏览器语言自动选择","One-tap Chinese/English switch; first visit follows your browser language")+"</li>"+
     "<li>🗺️ "+T("除平谷 10 镇外，新增山东蒙阴、河北深州、美国佐治亚桃县、加州圣华金谷、日本山梨、福岛 6 个著名桃产区（按站点访问量前三国）","Beyond Pinggu's 10 towns: Mengyin (Shandong), Shenzhou (Hebei), Peach County (Georgia, USA), San Joaquin Valley (CA, USA), Yamanashi and Fukushima (Japan) — the top-3 visiting countries")+"</li>"+
     "<li>🍑 "+T("品种表按国家切换：美国 Redhaven、Elberta 等，日本 白凤、あかつき 等","Variety lists switch by country: Redhaven/Elberta (US), Hakuhou/Akatsuki (JP)")+"</li>"+
-    "<li>⏰ "+T("各产区按当地时区取数与排日程","Each region fetches and schedules in its own timezone")+"</li></ul></div></div>"+
+    "<li>⏰ "+T("各产区按当地时区取数与排日程","Each region fetches and schedules in its own timezone")+"</li>"+
+    "<li>📊 "+T("新增「这个月有多少人在用」：网页上直接看过去 30 天访问量（Cloudflare 无 Cookie 匿名统计，密钥留在服务端）","New traffic panel: last-30-days page views on the page itself (cookieless Cloudflare analytics, keys stay server-side)")+"</li></ul></div></div>"+
     '<div class="log-item"><div class="log-ver"><span class="v">v4.0</span><span class="d">2026/09/20</span></div><div class="log-body"><div class="t">'+T("会算水账了，还知道帮你提醒疏果套袋","Water balance, plus thinning & bagging reminders")+"</div><ul>"+
     "<li>💧 "+T("新增「要不要浇水」模块：把近 30 天降雨和桃树喝掉的水算成一笔水分账，旱不旱一眼看出，还能结合 7 天预报告诉你「等多久、补多少」","New water-balance module: 30-day rain vs. tree water use at a glance, with \"wait or water, and how much\" from the 7-day forecast")+"</li>"+
     "<li>✂️ "+T("疏果、套袋的日子自动排进农事安排和月历（盛花后 25 天疏果、35 天套袋、56 天收尾）","Thinning and bagging days land in the plan and calendar (bloom +25/35/56 d)")+"</li>"+
@@ -1396,11 +1448,15 @@ function applyStaticLang(){
     "<li>🦠 "+T("病害风险日历：褐腐/缩叶/疮痂逐日判定","Disease calendar: brown rot / leaf curl / scab, judged daily")+"</li>"+
     "<li>🗓 "+T("农事月历：整月视图、事件标签、跨月翻页","Farm calendar: month view, event tags, month paging")+"</li></ul></div></div>"+
     '<p class="note">'+T("以后每次升级都会把新加的功能记在这里，并在打开网页时弹窗告诉大家。","Every release will be logged here — and announced in the welcome card on open.")+"</p>");
+  /* 访问统计 */
+  S("#stats .sec-head h2",T("这个月有多少人在用","How many people used it this month"));
+  S("#stats .sec-head p",T("过去 30 天的访问情况。数据来自 Cloudflare 隐私友好统计：不用 Cookie、不含个人信息，只显示汇总数字。","Traffic over the past 30 days, from Cloudflare's privacy-friendly analytics: no cookies, no personal data — aggregate numbers only."));
+  S("#stats .chart-title",T("过去 30 天 · 每日访问","Last 30 days · daily page views"));
   /* 欢迎弹窗 */
   S("#welcomeCard",'<button class="wc-x" id="welcomeClose" aria-label="'+T("关闭欢迎卡片","Close welcome card")+'">✕</button>'+
     '<span class="wc-badge">'+T("🎉 已更新到 v4.1","🎉 Updated to v4.1")+"</span>"+
     "<h3 id=\"wc-title\">"+T("欢迎使用桃园农事助手","Welcome to Peach Orchard Assistant")+"</h3>"+
-    '<p class="wc-sub">'+T("给平谷桃农的免费小助手：什么时候防冻、哪天能采桃、要不要浇水，打开手机就能看。不用注册，不收集任何信息。","A free helper for peach growers: when to guard against frost, when to pick, whether to water — at a glance on your phone. No sign-up, nothing collected.")+"</p>"+
+    '<p class="wc-sub">'+T("给平谷桃农的免费小助手：什么时候防冻、哪天能采桃、要不要浇水，打开手机就能看。不用注册，不用 Cookie，不收集任何个人信息。","A free helper for peach growers: when to guard against frost, when to pick, whether to water — at a glance on your phone. No sign-up, no cookies, no personal data collected.")+"</p>"+
     '<ul class="wc-list">'+
     "<li>💧 "+T("新增「要不要浇水」：算清水分账，旱不旱一眼看出","New water balance: the deficit at a glance")+"</li>"+
     "<li>✂️ "+T("疏果、套袋的日子自动排进农事安排","Thinning & bagging days land in your plan")+"</li>"+
@@ -1418,6 +1474,7 @@ function toggleLang(){
   applyStaticLang();
   buildLocOptions();
   if(G.fc){ renderF1(); renderF4(); renderF5(); renderF3(); renderCal(); updateHero(); renderPlan(); }
+  renderStats();
 }
 let cdLeft=AUTO_MIN*60;
 setInterval(()=>{
@@ -1435,6 +1492,8 @@ const langBtn=$("langBtn"), langBtnM=$("langBtnM");
 if(langBtn) langBtn.addEventListener("click", toggleLang);
 if(langBtnM) langBtnM.addEventListener("click", toggleLang);
 applyStaticLang();
+buildLocOptions();
+renderStats();
 
 /* ---------- 移动端抽屉导航 ---------- */
 (function(){
