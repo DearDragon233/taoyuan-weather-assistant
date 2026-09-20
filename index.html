@@ -621,6 +621,16 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
         数据源：Open-Meteo（免费开放、免注册）。限制：再分析数据极端低温可能有 1–2℃ 偏差；物候与病害阈值为文献通用口径，正式使用前建议结合科技小院实地观测校准；早凤王、庆丰、中油蟠 9 号需冷量无公开数值，界面显示"暂无公开数据"不虚构。
       </p>
     </div>
+    <div class="card howto reveal" id="mydata">
+      <h3><span class="ic">💾</span>我的记录 <span class="tagline">换手机前先备份</span></h3>
+      <div id="mydata-body" style="margin-top:10px"><p class="muted">正在检查本地记录…</p></div>
+      <div class="toolbar">
+        <button class="btn-mini primary" id="mydata-export" onclick="exportData()"></button>
+        <input type="file" id="mydata-file" accept="application/json,.json" style="display:none" onchange="importData(this)">
+        <button class="btn-mini" id="mydata-import" onclick="document.getElementById('mydata-file').click()"></button>
+      </div>
+      <p class="note" id="mydata-note"></p>
+    </div>
   </section>
 
   <!-- ============ 更新日志 ============ -->
@@ -1565,6 +1575,66 @@ function renderPest(){
     '<p class="note">'+T("深色日子在防治窗口内；窗口按 7.2℃ 基点积温自盛花起算（代理锚点），供参考——具体时间与药剂结合本地诱捕器并听植保站的。","Dark days fall in spray windows; windows use 7.2°C degree days from full bloom (proxy anchor) — for reference only; confirm with local traps and extension.")+"</p>";
 }
 
+/* ---------- 我的记录：导出 / 导入（换机备份） ---------- */
+const MYDATA_KEYS = k => k.startsWith("phenologyOverride:") || k === "taoyuan-lang" || k === "welcomeSeen";
+function mydataKeys(){
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(MYDATA_KEYS(k)) out.push(k); }
+  return out;
+}
+function renderMyData(){
+  const body=$("mydata-body"); if(!body) return;
+  const keys=mydataKeys();
+  if(!keys.length){
+    body.innerHTML='<p class="muted">'+T("本地还没有记录：上报过花期后，这里会列出保存的内容。","No local records yet — report a bloom stage and it will show up here.")+"</p>";
+  }else{
+    const rows=keys.map(k=>{
+      const v=localStorage.getItem(k)||"";
+      const label=k.startsWith("phenologyOverride:")
+        ? T("物候上报（产区 "+(k.split(":")[1]!==undefined?LOCATIONS[k.split(":")[1]]?LOCATIONS[k.split(":")[1]][0]:k.split(":")[1]:"?")+"）","Phenology report (region "+k.split(":")[1]+")")
+        : k==="taoyuan-lang" ? T("界面语言","Language preference") : T("欢迎弹窗版本","Welcome card version");
+      return "<tr><td>"+label+"</td><td class='mono'>"+(v.length<40?v:"…")+"</td></tr>";
+    }).join("");
+    body.innerHTML="<table class='tb'>"+rows+"</table>";
+  }
+  $("mydata-export").textContent=T("导出记录","Export records");
+  $("mydata-import").textContent=T("导入记录","Import records");
+  $("mydata-note").textContent=T("记录只存在您自己的手机上（不上传）。换手机前点「导出记录」存个文件，新手机上「导入记录」即可恢复。个别手机浏览器不支持选文件导入。","Records stay on your device only. Export a file before switching phones, then import it on the new one. Some mobile browsers don't support file import.");
+}
+function exportData(){
+  const keys=mydataKeys();
+  if(!keys.length){ showToast(T("还没有可导出的记录","Nothing to export yet")); return; }
+  const obj={ app:"taoyuan", ver:1, exportedAt:new Date().toISOString(), data:{} };
+  keys.forEach(k=>{ obj.data[k]=localStorage.getItem(k); });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(obj,null,1)],{type:"application/json"}));
+  a.download="taoyuan-records-"+todayISO()+".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  showToast(T("已导出，请在下载里查看","Exported — check your downloads"));
+}
+function importData(input){
+  const f=input.files&&input.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    let obj=null;
+    try{ obj=JSON.parse(rd.result); }catch(e){}
+    if(!obj||obj.app!=="taoyuan"||!obj.data||typeof obj.data!=="object"){
+      showToast(T("文件结构不符，未导入","Unrecognized file structure — not imported")); return;
+    }
+    if(!confirm(T("导入会覆盖手机上现有的记录，确定继续吗？","Importing will overwrite existing records on this device. Continue?"))) return;
+    let n=0;
+    for(const k in obj.data){
+      if(MYDATA_KEYS(k)&&typeof obj.data[k]==="string"){ try{ localStorage.setItem(k,obj.data[k]); n++; }catch(e){} }
+    }
+    showToast(T("已导入 "+n+" 条记录","Imported "+n+" records"));
+    applyStaticLang();
+    reapplyPheno();
+    renderMyData();
+  };
+  rd.readAsText(f);
+  input.value="";
+}
+
 /* ---------- 访问统计（过去 30 天，聚合数字） ---------- */
 async function renderStats(){
   const body=$("stats-body"), chart=$("stats-chart");
@@ -1735,7 +1805,9 @@ function applyStaticLang(){
     '<div class="log-item"><div class="log-ver"><span class="v">v4.2</span><span class="d">2026/09/20</span></div><div class="log-body"><div class="t">'+T("能报花期了：您看到的真花，比模型准","Report your bloom: real flowers beat the model")+"</div><ul>"+
     "<li>🌱 "+T("新增物候上报：在「花期防冻」卡里报一下现蕾/露瓣/初花/盛花和日期，防冻、疏果、套袋、采收的日子全部按您家实况重算","New phenology report: in the frost card, report the bud/first-bloom/full-bloom stage and date — frost, thinning, bagging and pick dates all recalculate to your orchard")+"</li>"+
     "<li>🔄 "+T("点「恢复气象推算」随时退回；上报按产区分别记忆，刷新或换产区再回来都还在","One tap returns to the weather estimate; reports are kept per region and survive refreshes")+"</li>"+
-    "<li>🏷️ "+T("按上报计算时，防冻卡、采收卡、月历都会标注「按您上报的物候计算」","When your report drives the numbers, the frost card, pick card and calendar all say so")+"</li></ul></div></div>"+
+    "<li>🏷️ "+T("按上报计算时，防冻卡、采收卡、月历都会标注「按您上报的物候计算」","When your report drives the numbers, the frost card, pick card and calendar all say so")+"</li>"+
+    "<li>🐛 "+T("新增「哪几天要防虫」：按积温推梨小食心虫各代防治窗口（自动跟随你上报的花期）","New pest-pressure card: oriental fruit moth spray windows by degree days, following your bloom report")+"</li>"+
+    "<li>💾 "+T("「我的记录」支持一键导出/导入，换手机不丢上报数据","Export/import your records as a file when switching phones")+"</li></ul></div></div>"+
     '<div class="log-item"><div class="log-ver"><span class="v">v4.1</span><span class="d">2026/09/20</span></div><div class="log-body"><div class="t">'+T("会说英语了，还把服务范围扩到了著名桃产区","Now speaks English, and covers famous peach regions")+"</div><ul>"+
     "<li>🌐 "+T("中英双语一键切换，首次访问按浏览器语言自动选择","One-tap Chinese/English switch; first visit follows your browser language")+"</li>"+
     "<li>🗺️ "+T("除平谷 10 镇外，新增山东蒙阴、河北深州、美国佐治亚桃县、加州圣华金谷、日本山梨、福岛 6 个著名桃产区（按站点访问量前三国）","Beyond Pinggu's 10 towns: Mengyin (Shandong), Shenzhou (Hebei), Peach County (Georgia, USA), San Joaquin Valley (CA, USA), Yamanashi and Fukushima (Japan) — the top-3 visiting countries")+"</li>"+
@@ -1760,6 +1832,9 @@ function applyStaticLang(){
   S("#stats .sec-head h2",T("这个月有多少人在用","How many people used it this month"));
   S("#stats .sec-head p",T("过去 30 天的访问情况。数据来自 Cloudflare 隐私友好统计：不用 Cookie、不含个人信息，只显示汇总数字。","Traffic over the past 30 days, from Cloudflare's privacy-friendly analytics: no cookies, no personal data — aggregate numbers only."));
   S("#stats .chart-title",T("过去 30 天 · 每日访问","Last 30 days · daily page views"));
+  /* 我的记录（导出/导入） */
+  S("#mydata h3",T('<span class="ic">💾</span>我的记录 <span class="tagline">换手机前先备份</span>','<span class="ic">💾</span>My records <span class="tagline">back up before switching phones</span>'));
+  renderMyData();
   /* 欢迎弹窗 */
   S("#welcomeCard",'<button class="wc-x" id="welcomeClose" aria-label="'+T("关闭欢迎卡片","Close welcome card")+'">✕</button>'+
     '<span class="wc-badge">'+T("🎉 已更新到 v4.2","🎉 Updated to v4.2")+"</span>"+
