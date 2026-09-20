@@ -9,9 +9,9 @@
  *  - 其他跨域请求一律不处理。
  *
  * 维护提示：改动 index.html 或静态资源后，请把下面的 CACHE_VERSION 版本号 +1
- * （如 taoyuan-shell-v3 -> taoyuan-shell-v2），旧缓存会在 activate 时自动清理。
+ * （如 taoyuan-shell-v4 -> taoyuan-shell-v5），旧缓存会在 activate 时自动清理。
  */
-const CACHE_VERSION = "taoyuan-shell-v3";
+const CACHE_VERSION = "taoyuan-shell-v4";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
@@ -21,11 +21,19 @@ const SHELL_ASSETS = [
   "./icons/icon-512-maskable.png"
 ];
 
-/* 安装：预缓存页面外壳，并立即接管旧 SW */
+/* 安装：预缓存页面外壳，并立即接管旧 SW。
+   每个资源用 cache:"no-cache" 与服务器校验，避免被浏览器启发式 HTTP 缓存污染预缓存 */
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
-      .then((cache) => cache.addAll(SHELL_ASSETS))
+      .then((cache) => Promise.all(
+        SHELL_ASSETS.map((asset) =>
+          fetch(asset, { cache: "no-cache" }).then((response) => {
+            if (!response.ok) throw new Error("precache " + asset + " HTTP " + response.status);
+            return cache.put(asset, response);
+          })
+        )
+      ))
       .then(() => self.skipWaiting())
   );
 });
@@ -62,10 +70,11 @@ self.addEventListener("fetch", (event) => {
   /* 其他跨域请求一律不管 */
   if (url.origin !== self.location.origin) return;
 
-  /* 导航请求：network-first，断网时回退缓存的 index.html */
+  /* 导航请求：network-first，断网时回退缓存的 index.html。
+     cache:"no-cache" 强制与服务器校验，防止启发式缓存返回过期页面 */
   if (req.mode === "navigate") {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: "no-cache" })
         .then((response) => {
           if (response && response.ok) {
             const copy = response.clone();
