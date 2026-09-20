@@ -232,11 +232,16 @@ details[open] summary { margin-bottom: 8px; }
 .legend .li { display: inline-flex; align-items: center; gap: 5px; }
 .legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
 
-/* 语言切换按钮 */
-.lang-btn { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--ink-2);
-  font-size: 12.5px; font-weight: 700; padding: 7px 12px; cursor: pointer; transition: all .15s; font-family: inherit; min-height: 34px; }
-.lang-btn:hover { border-color: var(--accent); color: var(--accent); }
-.drawer-lang { margin-top: 10px; width: 100%; padding: 13px; font-size: 14px; border-radius: 10px; }
+/* 语言切换（中文/EN 并排，当前语言底色变深） */
+.lang-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--surface); flex-shrink: 0; }
+.lang-opt { border: none; background: transparent; padding: 7px 13px; font-size: 12.5px; font-weight: 700; color: var(--ink-3);
+  cursor: pointer; min-height: 34px; font-family: inherit; transition: color .15s, background .15s; }
+.lang-opt + .lang-opt { border-left: 1px solid var(--line); }
+.lang-opt:hover { color: var(--ink); background: #f5f5f4; }
+.lang-opt.active { background: var(--accent); color: #fff; }
+.lang-opt.active:hover { background: #065f46; }
+.drawer-lang { margin-top: 10px; width: 100%; }
+.drawer-lang .lang-opt { flex: 1; padding: 13px 10px; font-size: 14px; min-height: 44px; }
 
 /* Toast（biohub 同款） */
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(16px); background: var(--ink); color: #fff; font-size: 13px; padding: 9px 18px; border-radius: 999px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 80; }
@@ -351,7 +356,10 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       </svg>
       <span class="logo-text">桃园农事助手</span>
     </a>
-    <button class="lang-btn" id="langBtn" aria-label="Switch language">EN</button>
+    <div class="lang-switch" role="group" aria-label="语言 / Language">
+      <button class="lang-opt" data-lang="zh" aria-pressed="false">中文</button>
+      <button class="lang-opt" data-lang="en" aria-pressed="false">EN</button>
+    </div>
     <button class="nav-toggle" id="navToggle" aria-label="打开菜单" aria-expanded="false" aria-controls="navDrawer">
       <span></span><span></span><span></span>
     </button>
@@ -417,7 +425,10 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
   <a href="#disease">🦠 病害风险</a>
   <a href="#changelog">📝 更新日志</a>
   <a href="#howto">ℹ️ 使用说明</a>
-  <button class="lang-btn drawer-lang" id="langBtnM">🌐 English</button>
+  <div class="lang-switch drawer-lang" role="group" aria-label="语言 / Language">
+    <button class="lang-opt" data-lang="zh" aria-pressed="false">中文</button>
+    <button class="lang-opt" data-lang="en" aria-pressed="false">English</button>
+  </div>
   <div class="drawer-foot"><span class="drawer-foot-text">桃园农事气象助手</span></div>
 </aside>
 
@@ -1357,8 +1368,12 @@ function applyStaticLang(){
     const EMO={plan:"🧭 ",calendar:"🗓 ",frost:"❄️ ",chill:"😴 ",harvest:"📅 ",irrigation:"💧 ",disease:"🦠 ",changelog:"📝 ",howto:"ℹ️ "};
     document.querySelectorAll('.nav-drawer a[href="#'+id+'"]').forEach(a=>{ a.childNodes[a.childNodes.length-1].nodeValue=EMO[id]+NV[id][li]; });
   }
-  const lb=$("langBtn"); if(lb) lb.textContent=LANG==="zh"?"EN":"中文";
-  const lbm=$("langBtnM"); if(lbm) lbm.textContent=LANG==="zh"?"🌐 English":"🌐 中文";
+  /* 语言分段按钮：当前语言底色变深 */
+  document.querySelectorAll(".lang-switch .lang-opt").forEach(b=>{
+    const on = b.dataset.lang===LANG;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", on?"true":"false");
+  });
   const dft=$(".drawer-foot-text"); if(dft) dft.textContent=T("桃园农事气象助手","Peach Orchard Assistant");
   /* Hero */
   S(".hero h1",T('桃树管理<span class="accent">该做什么、什么时候做</span>，打开就能看','Know <span class="accent">what to do, and when</span> in your peach orchard'));
@@ -1478,8 +1493,9 @@ function applyStaticLang(){
   S("footer .foot-inner p",T("开发：彭宇程 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style=\"color:var(--ink-3)\">（版本 v4.1）</span>","Built by Peng Yucheng · China Agricultural University summer field team. Free to use; data refreshes every 30 minutes, or tap refresh. Advice is for reference — for major decisions consult your local plant-protection service. <span style=\"color:var(--ink-3)\">(v4.1)</span>"));
   S("footer .links",'<a href="#plan">'+T("推进方案","Plan")+'</a><a href="#calendar">'+T("月历","Calendar")+'</a><a href="#howto">'+T("说明","About")+"</a>");
 }
-function toggleLang(){
-  LANG = LANG==="zh" ? "en" : "zh";
+function setLang(lang){
+  if(LANG===lang) return;
+  LANG=lang;
   try{ localStorage.setItem("taoyuan-lang", LANG); }catch(e){}
   applyStaticLang();
   buildLocOptions();
@@ -1498,9 +1514,10 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&G.fc) re
   buildLocOptions();
   sel.addEventListener("change",()=>{ G.loc=Number(sel.value); refreshAll(true); });
 })();
-const langBtn=$("langBtn"), langBtnM=$("langBtnM");
-if(langBtn) langBtn.addEventListener("click", toggleLang);
-if(langBtnM) langBtnM.addEventListener("click", toggleLang);
+/* 语言分段按钮：点哪个切哪个，当前的高亮 */
+document.querySelectorAll(".lang-switch .lang-opt").forEach(b=>{
+  b.addEventListener("click", ()=>setLang(b.dataset.lang));
+});
 applyStaticLang();
 buildLocOptions();
 renderStats();
