@@ -125,6 +125,20 @@ nav { position: sticky; top: 0; z-index: 50; background: rgba(250,250,249,.86); 
 .tool-row .refresh { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; transition: all .15s; }
 .tool-row .refresh:hover { border-color: var(--accent); color: var(--accent); }
 .tool-row .refresh:active { transform: translateY(1px); }
+.record-box { margin-top:12px; padding:12px 14px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); }
+.record-box h3 { margin:0 0 8px; font-size:15px; }
+.record-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px; }
+.record-form label { font-size:12px; min-width:0; }
+.record-form input, .record-form select { width:100%; min-width:0; min-height:44px; border:1px solid var(--line); border-radius:8px; padding:7px; background:var(--surface); color:var(--ink); font:inherit; box-sizing:border-box; }
+.record-form button, .record-list button { min-height:44px; }
+.record-form .wide { grid-column:1/-1; }
+.record-list { font-size:12px; }
+.record-list .record-row { padding:8px 0; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.record-list .record-actions { display:flex; gap:8px; }
+.frost-hours { max-height:260px; overflow:auto; margin-top:8px; }
+.frost-hours table { min-width:340px; }
+.frost-hours tr.hour-risk { background:#fff7ed; }
+.frost-hours tr.hour-severe { color:var(--danger); background:#fef2f2; font-weight:700; }
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 
@@ -438,6 +452,18 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       </div>
       <p class="tool-note">请先在上方选择您所在的乡镇，各项日期均按当地气象数据计算。气象为模式推算数据，重大天气过程请以气象部门官方发布为准。</p>
     </div>
+      <div class="record-box" id="observations">
+        <h3 id="obs-title">📝 我家桃园的实测记录</h3>
+        <p class="note" id="obs-note"></p>
+        <form class="record-form" id="obs-form" onsubmit="event.preventDefault(); saveObservation()">
+          <label><span id="obs-date-label"></span><input type="date" id="obs-date" required onchange="fillObservation()"></label>
+          <label><span id="obs-temp-label"></span><input type="number" id="obs-temp" min="-90" max="60" step="0.1"></label>
+          <label><span id="obs-rain-label"></span><input type="number" id="obs-rain" min="0" max="1000" step="0.1"></label>
+          <label><span id="obs-harvest-label"></span><select id="obs-harvest"></select></label>
+          <button type="submit" class="btn-mini primary wide" id="obs-save"></button>
+        </form>
+        <details><summary id="obs-history-label"></summary><div class="record-list" id="obs-history"></div></details>
+      </div>
       <div class="myorchards" id="myOrchards" style="display:none">
         <div class="mo-title" id="mo-title">⭐ 我的园子（点一行切到那个园子）</div>
         <div id="mo-rows"></div>
@@ -544,6 +570,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       <div class="card span-7 reveal" id="f1-card">
         <h3><span class="ic">❄️</span>花期防冻 <span class="tagline">开花怕冻，提前几天就知道</span></h3>
         <div class="tool-body" id="f1-body"><p class="muted">正在计算…</p></div>
+        <details id="frost-hourly"><summary id="frost-hourly-title">未来 72 小时逐小时防冻提醒</summary><div id="frost-hourly-body"></div></details>
         <div id="pheno-box">
           <div class="pheno-title" id="pheno-title"></div>
           <span class="badge b-ok" id="pheno-badge" style="display:none"></span>
@@ -557,7 +584,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
         </div>
         <div class="chart-title">未来 16 天最低温走势（虚线 = 当前阶段 T10）</div>
         <div class="chart-box" id="chart-f1"></div>
-        <details>
+        <details id="frost-replay">
           <summary>看看前几年冻过多少天</summary>
           <div id="f1-replay"><button class="btn-mini" onclick="loadReplay()">调出前三年春天</button></div>
         </details>
@@ -619,9 +646,20 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       <div class="card span-6 reveal" id="irrigation">
         <h3><span class="ic">💧</span>要不要浇水 <span class="tagline">近 30 天下没下雨、树喝了多少水，一眼看缺不缺</span></h3>
         <div class="tool-body" id="f5-body"><p class="muted">正在算水分账…</p></div>
-        <details>
+        <details id="water-records">
+          <summary id="water-title"></summary>
+          <p class="note" id="water-note"></p>
+          <form class="record-form" onsubmit="event.preventDefault(); saveWaterRecord()">
+            <label><span id="water-date-label"></span><input type="date" id="water-date" required onchange="fillWaterRecord()"></label>
+            <label><span id="water-mm-label"></span><input type="number" id="water-mm" min="0" max="1000" step="0.1"></label>
+            <label class="wide"><span id="water-soil-label"></span><select id="water-soil"></select></label>
+            <button type="submit" class="btn-mini primary wide" id="water-save"></button>
+          </form>
+          <p class="note" id="water-summary"></p>
+        </details>
+        <details id="water-science">
           <summary>这笔水分账是怎么算的（科学依据）</summary>
-          <p class="note">把最近 30 天的降雨（按 75% 算有效，其余流走蒸发）减去桃树这阵子「喝掉」的水（按国际通用的参考蒸发量 ET₀ × 桃树各月系数折算），得出的就是水分盈亏：负得越多，土里欠的水越多。下一步要不要等雨，看未来 7 天的降雨预报。此为简化算法，没有考虑土壤保水能力差异；具体浇多少，结合扒土看墒和实际情况掌握。</p>
+          <p class="note">把最近 30 天的降雨（按 75% 算有效，其余流走蒸发），加上记录的实际浇水量，再减去桃树这阵子「喝掉」的水（按国际通用的参考蒸发量 ET₀ × 桃树各月系数折算），得出的就是水分盈亏：负得越多，土里欠的水越多。下一步要不要等雨，看未来 7 天的降雨预报。此为简化算法，没有考虑土壤保水能力差异；具体浇多少，结合扒土看墒和实际情况掌握。</p>
         </details>
       </div>
     </div>
@@ -641,7 +679,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
         <tr><td>冻害预警</td><td>16 天预报 + 历史积温</td><td>物候阶段 × 临界温度表比对</td><td>红/黄/绿灯 + 防灾动作</td></tr>
         <tr><td>需冷量</td><td>11 月起小时级温度</td><td>0–7.2℃ 小时累计 vs 品种需求</td><td>休眠满足度 + 暖冬预警</td></tr>
         <tr><td>采收窗口</td><td>盛花估算 + 品种发育期 + 降雨预报</td><td>盛花 + DAFB，叠加晴雨窗</td><td>窗口日期 + 抢晴建议</td></tr>
-        <tr><td>浇水决策</td><td>近 30 天降水 + ET₀ 蒸发量 + 未来 7 天降雨</td><td>水分盈亏 = 0.75×降水 − ET₀×各月系数</td><td>浇不浇、等多久、补多少</td></tr>
+        <tr><td>浇水决策</td><td>近 30 天降水 + ET₀ 蒸发量 + 未来 7 天降雨</td><td>水分盈亏 = 0.75×降水 + 实际浇水 − ET₀×各月系数</td><td>浇不浇、等多久、补多少</td></tr>
         <tr><td>疏果套袋</td><td>盛花估算</td><td>盛花 + 25/35/56 天三个节点</td><td>疏果/套袋时间窗提醒</td></tr>
         <tr><td>病害风险</td><td>预报温湿雨</td><td>三种病害侵染气象条件判定</td><td>逐日风险色块 + 用药窗口提示</td></tr>
       </table>
@@ -668,6 +706,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       <p>助手隔一阵子就会升级一次，这里记着每一版加了什么新本事。手机上如果看到的还是老样子，刷新一下页面就是最新版。</p>
     </div>
     <div class="card reveal">
+      <div class="log-item"><div class="log-ver"><span class="v">v4.3</span><span class="d">2026/10/08</span></div><div class="log-body"><div class="t">实测记录、小时防冻和实际浇水账</div><ul><li>首页可记最低温、降雨和采收日，分产区保存，可编辑和备份。</li><li>花期防冻卡新增未来 72 小时逐小时提醒与集合预报范围。</li><li>浇水卡内可记每日浇水量和墒情，实测降雨与浇水计入水分账。</li></ul></div></div>
       <div class="log-item">
         <div class="log-ver"><span class="v">v4.2</span><span class="d">2026/09/20</span></div>
         <div class="log-body">
@@ -727,7 +766,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
 
 <footer>
   <div class="wrap foot-inner">
-    <p>开发：彭宇程 · 梁扬益 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style="color:var(--ink-3)">（版本 v4.2）</span></p>
+    <p>开发：彭宇程 · 梁扬益 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style="color:var(--ink-3)">（版本 v4.3）</span></p>
     <div class="links">
       <a href="#plan">推进方案</a>
       <a href="#calendar">月历</a>
@@ -739,13 +778,13 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
 <div class="modal-backdrop" id="welcomeBackdrop" aria-hidden="true"></div>
 <div class="welcome-card" id="welcomeCard" role="dialog" aria-modal="true" aria-labelledby="wc-title" aria-hidden="true">
   <button class="wc-x" id="welcomeClose" aria-label="关闭欢迎卡片">✕</button>
-  <span class="wc-badge">🎉 已更新到 v4.2</span>
+  <span class="wc-badge">🎉 已更新到 v4.3</span>
   <h3 id="wc-title">欢迎使用桃园农事助手</h3>
   <p class="wc-sub">给平谷桃农的免费小助手：什么时候防冻、哪天能采桃、要不要浇水，打开手机就能看。不用注册，不收集任何信息。</p>
   <ul class="wc-list">
-    <li>🌱 可上报自家实际花期，全站日期跟着您家的树走</li>
-    <li>💧 新增「要不要浇水」：算清水分账，旱不旱一眼看出</li>
-    <li>✂️ 疏果、套袋的日子自动排进农事安排</li>
+    <li>📝 首页填写实测最低温、降雨和采收日，分产区保存</li>
+    <li>💧 记下实际浇水量，水分账跟着更新</li>
+    <li>❄️ 新增未来 72 小时逐小时防冻提醒</li>
     <li>📱 可添加到手机主屏幕，信号差也能打开看</li>
   </ul>
   <div class="wc-btns">
@@ -850,18 +889,23 @@ const gname = g => T(g.zh, g.en);   /* 虫害世代名 */
 /* ================= 结束参数区 ================= */
 
 const $ = id => document.getElementById(id);
-const G = { fc:null, idxToday:-1, today:null, gddMap:null, bloom:null, loc:0, calY:0, calM:0, events:{}, pheno:null, gddOffset:0, bloomRaw:null };
-const CACHE_VER = "v7", CACHE_TTL = 3600 * 1000;
+const G = { fc:null, idxToday:-1, today:null, gddMap:null, bloom:null, loc:0, dataLoc:null, calY:0, calM:0, events:{}, pheno:null, gddOffset:0, bloomRaw:null, chill:null, staleAt:null, weatherUnavailable:false, frostHourly:null, frostEnsemble:null, frostHourlyStatus:"idle" };
+const CACHE_VER = "v9", CACHE_TTL = 3600 * 1000;
 function cacheGet(k, allowStale){
   try{
     const r=localStorage.getItem("om:"+CACHE_VER+":"+k);
     if(!r) return null;
     const o=JSON.parse(r);
+    o.v.__cachedAt=o.t;
     if(Date.now()-o.t<=CACHE_TTL) return o.v;
     return allowStale?o.v:null;      /* 过期缓存：正常不用，失败时救急 */
   }catch(e){ return null; }
 }
-function cacheSet(k,v){ try{ localStorage.setItem("om:"+CACHE_VER+":"+k, JSON.stringify({t:Date.now(),v})); }catch(e){} }
+function cacheSet(k,v){
+  const t=Date.now();
+  try{ localStorage.setItem("om:"+CACHE_VER+":"+k, JSON.stringify({t,v})); }catch(e){}
+  v.__cachedAt=t;
+}
 async function fetchJSON(url, key, force){
   const k = key||url;
   if(!force){ const c=cacheGet(k); if(c) return c; }
@@ -898,6 +942,13 @@ const arcDailyURL = (a,b,i) => { const L=LOCATIONS[i==null?G.loc:i]; return "htt
 const arcHourlyURL = (a,b,i) => { const L=LOCATIONS[i==null?G.loc:i]; return "https://archive-api.open-meteo.com/v1/archive?latitude="+L[1]+"&longitude="+L[2]+
   "&start_date="+a+"&end_date="+b+"&hourly=temperature_2m&timezone="+encodeURIComponent(L[4]); };
 
+const hourlyFrostURL = (idx, ensemble) => {
+  const L=LOCATIONS[idx];
+  return (ensemble?"https://ensemble-api.open-meteo.com/v1/ensemble":"https://api.open-meteo.com/v1/forecast")+
+    "?latitude="+L[1]+"&longitude="+L[2]+"&hourly="+(ensemble?"temperature_2m":"temperature_2m,wind_speed_10m,precipitation")+
+    (ensemble?"&models=gfs_seamless":"")+"&forecast_hours=72&timeformat=unixtime&timezone="+encodeURIComponent(L[4]);
+};
+
 function gddSeries(dates, tmax, tmin, base){
   let s=0; const out={};
   for(let i=0;i<dates.length;i++){ const tx=tmax[i],tn=tmin[i];
@@ -907,6 +958,9 @@ function gddSeries(dates, tmax, tmin, base){
 function stageOf(gdd){ let st=STAGES[0]; for(const s of STAGES){ if(gdd>=s.gdd) st=s; } return st; }
 function fmtDate(iso){ return iso.slice(5).replace("-","/"); }
 const todayISO = i => new Date().toLocaleDateString("sv-SE",{timeZone:LOCATIONS[i==null?G.loc:i][4]});
+const dateUTC = iso => new Date(iso+"T00:00:00Z");
+function addDaysISO(iso, days){ const d=dateUTC(iso); d.setUTCDate(d.getUTCDate()+days); return d.toISOString().slice(0,10); }
+const daysBetweenISO = (a,b) => Math.round((dateUTC(a)-dateUTC(b))/86400000);
 function pad(n){ return (n<10?"0":"")+n; }
 let toastTimer=null;
 function showToast(msg){
@@ -1062,38 +1116,57 @@ function extendGdd72WithForecast(rd){
 async function loadRegion(idx, force){
   const fc = await fetchJSON(fcURL(idx), "fc108:"+idx, force);
   const tAll = fc.daily.time;
-  let idxToday = tAll.indexOf(todayISO(idx)); if(idxToday<0) idxToday = tAll.length-1;
+  const idxToday = tAll.indexOf(todayISO(idx));
+  if(idxToday<0) throw new Error("Forecast does not cover the current date");
   const today = tAll[idxToday];
   const year = today.slice(0,4);
-  const lag = new Date(today); lag.setDate(lag.getDate()-6);
-  const lagS = lag.toLocaleDateString("sv-SE");
-  const arc = await fetchJSON(arcDailyURL(year+"-01-01", lagS, idx), "arcm"+lagS+":"+idx, force);
-  const gdd = gddSeries(arc.daily.time, arc.daily.temperature_2m_max, arc.daily.temperature_2m_min, 4.5);
-  const gdd72 = gddSeries(arc.daily.time, arc.daily.temperature_2m_max, arc.daily.temperature_2m_min, PEST.base);   /* 虫害积温（7.2℃ 基点） */
+  const lagS = addDaysISO(today,-6);
+  const arc = lagS>=year+"-01-01" ? await fetchJSON(arcDailyURL(year+"-01-01", lagS, idx), "arcm"+lagS+":"+idx, force) : null;
+  const gdd = arc ? gddSeries(arc.daily.time, arc.daily.temperature_2m_max, arc.daily.temperature_2m_min, 4.5) : {};
+  const gdd72 = arc ? gddSeries(arc.daily.time, arc.daily.temperature_2m_max, arc.daily.temperature_2m_min, PEST.base) : {};   /* 虫害积温（7.2℃ 基点） */
   for(let i=0;i<=idxToday;i++){
     const d=tAll[i];
-    if(d>lagS && gdd[d]===undefined){
+    if(d>=year+"-01-01" && d>lagS && gdd[d]===undefined){
       const tx=fc.daily.temperature_2m_max[i], tn2=fc.daily.temperature_2m_min[i];
       const inc=(tx!=null&&tn2!=null)?Math.max(0,(tx+tn2)/2-4.5):0;
-      gdd[d]=(i>0?gdd[tAll[i-1]]:0)+inc;
-      if(gdd72[tAll[i-1]]!==undefined) gdd72[d]=gdd72[tAll[i-1]]+((tx!=null&&tn2!=null)?Math.max(0,(tx+tn2)/2-PEST.base):0);
+      gdd[d]=(gdd[tAll[i-1]]||0)+inc;
+      gdd72[d]=(gdd72[tAll[i-1]]||0)+((tx!=null&&tn2!=null)?Math.max(0,(tx+tn2)/2-PEST.base):0);
     }
   }
-  const rd={ idx:idx, fc:fc, idxToday:idxToday, today:today, gddMap:gdd, gddMap72:gdd72, bloom:null, bloomRaw:null, pheno:null, gddOffset:0, events:{} };
+  const rd={ idx:idx, fc:fc, idxToday:idxToday, today:today, gddMap:gdd, gddMap72:gdd72, bloom:null, bloomRaw:null, pheno:null, gddOffset:0, events:{}, staleAt:Math.min(...[fc,arc].filter(x=>x&&x.__stale).map(x=>x.__cachedAt)) };
   extendGdd72WithForecast(rd);   /* 虫害窗口可能落在未来 16 天预报段，需沿预报续算 */
   let bloom=null;
-  for(const d of arc.daily.time){ if(d>=year+"-02-01" && gdd[d]>=BLOOM_GDD){ bloom=d; break; } }
+  for(const d of Object.keys(gdd).sort()){ if(d>=year+"-02-01" && gdd[d]>=BLOOM_GDD){ bloom=d; break; } }
   rd.bloom=bloom; rd.bloomRaw=bloom;
   applyPhenoOverride(rd);   /* 该产区的物候上报（如有）只作用于 rd，不碰 G */
   return rd;
 }
+let refreshSeq=0;
+function clearWeather(unavailable){
+  G.fc=null; G.idxToday=-1; G.today=null; G.gddMap=null; G.gddMap72=null; G.bloom=null; G.events={}; G.chill=null; G.staleAt=null; G.weatherUnavailable=!!unavailable;
+  for(const id of ["plan-body","f1-body","f2-body","f3-body","f4-body","f5-body","pest-body"]){
+    $(id).innerHTML='<p class="muted">'+(unavailable?T("这个产区的数据暂时无法获取，请联网后刷新。","This region’s data is unavailable. Reconnect and refresh."):T("正在获取这个产区的数据…","Loading this region’s data…"))+'</p>';
+  }
+  for(const id of ["chart-f1","chart-f2","chart-f3","chart-risk"]) $(id).innerHTML="";
+  for(const id of ["h-bloom","h-harvest","h-risk","h-chill"]) $(id).textContent="–";
+  $("cal-grid").innerHTML="";
+}
 async function refreshAll(force){
+  const idx=G.loc, seq=++refreshSeq;
+  G.frostHourly=null; G.frostEnsemble=null; G.frostHourlyStatus="loading"; renderHourlyFrost();
+  renderRecordForms();
+  if(G.dataLoc!==idx){ G.calY=0; G.calM=0; }
+  if(G.dataLoc!==idx || (G.today && G.today!==todayISO(idx))) clearWeather();
   try{
     $("fresh").textContent = T("正在取天气…","Fetching weather…");
-    const rd = await loadRegion(G.loc, force);
-    if(rd.fc.__stale) showToast(T("当前网络不畅，先为您显示最近一次成功获取的数据","Weak connection — showing the last data fetched"));
-    G.fc = rd.fc; G.idxToday = rd.idxToday; G.today = rd.today;
-    $("fresh").textContent = T("已更新到 ","Updated ")+new Date().toLocaleTimeString(T("zh-CN","en-US"),{hour:"2-digit",minute:"2-digit"});
+    const rd = await loadRegion(idx, force);
+    if(seq!==refreshSeq || idx!==G.loc) return;
+    if(Number.isFinite(rd.staleAt)) showToast(T("当前网络不畅，先为您显示最近一次成功获取的数据","Weak connection — showing the last data fetched"));
+    G.fc = rd.fc; G.idxToday = rd.idxToday; G.today = rd.today; G.chill=null; G.staleAt=rd.staleAt; G.weatherUnavailable=false;
+    G.dataLoc=idx;
+    $("fresh").textContent = Number.isFinite(rd.staleAt)
+      ? T("缓存数据 · 上次获取 ","Cached data · fetched ")+new Date(rd.staleAt).toLocaleString(T("zh-CN","en-US"))
+      : T("已更新到 ","Updated ")+new Date().toLocaleTimeString(T("zh-CN","en-US"),{hour:"2-digit",minute:"2-digit"});
     cdLeft = AUTO_MIN*60;
     G.gddMap = rd.gddMap;
     G.gddMap72 = rd.gddMap72;
@@ -1103,11 +1176,16 @@ async function refreshAll(force){
     renderPhenoBox();
     buildEvents();
     renderF1(); renderF4(); renderF5(); renderPest(); renderF3(); renderCal(); updateHero();
-    renderF2(force).catch(e=>{ $("f2-body").innerHTML='<p class="err">'+T("今冬气温数据暂时无法获取，请稍后点击「刷新」重试。","Winter temperature data unavailable right now — tap “Refresh” later to retry.")+'</p>'; });
+    loadHourlyFrost(force,seq,idx);
+    renderObservationHistory();
+    renderF2(force,seq,idx).catch(e=>{ if(seq===refreshSeq) $("f2-body").innerHTML='<p class="err">'+T("今冬气温数据暂时无法获取，请稍后点击「刷新」重试。","Winter temperature data unavailable right now — tap “Refresh” later to retry.")+'</p>'; });
     renderPlan();
     renderFavBtn();
     refreshMyOrchards();   /* 「我的园子」摘要条：异步补各收藏产区，不阻塞主产区渲染 */
   }catch(e){
+    if(seq!==refreshSeq || idx!==G.loc) return;
+    if(!G.fc || G.today!==todayISO(idx)) clearWeather(true);
+    G.weatherUnavailable=true; G.frostHourlyStatus="unavailable"; renderHourlyFrost();
     $("fresh").innerHTML = '<span class="err">'+T("暂时无法获取气象数据，请检查网络后点击「刷新」重试","Weather data unavailable — check your connection and tap “Refresh”")+'</span>';
     showToast(T("气象数据暂时无法获取，正在为您重试或显示最近一次数据","Weather data unavailable — retrying or showing the last data"));
   }
@@ -1120,11 +1198,11 @@ function updateHero(){
   if(G.bloom){
     let best=null;
     for(const v of varieties()){
-      const hd=new Date(G.bloom); hd.setDate(hd.getDate()+v[2]);
-      const left=Math.round((hd-new Date(G.today))/86400000);
+      const hd=addDaysISO(G.bloom,v[2]);
+      const left=daysBetweenISO(hd,G.today);
       if(left>=-7 && (!best || left<best.left)) best={left, v, hd};
     }
-    if(best){ hv=vName(best.v)+" "+fmtDate(best.hd.toLocaleDateString("sv-SE")); hs=best.left>=0?T("距今 "+best.left+" 天",best.left+" days away"):T("窗口进行中","window open"); }
+    if(best){ hv=vName(best.v)+" "+fmtDate(best.hd); hs=best.left>=0?T("距今 "+best.left+" 天",best.left+" days away"):T("窗口进行中","window open"); }
   }
   $("h-harvest").textContent=hv; $("h-harvest-s").textContent=hs;
   let risk=0;
@@ -1136,9 +1214,9 @@ function updateHero(){
   }
   $("h-risk").textContent=risk?risk+" 天":"0 天";
   $("h-risk").innerHTML = risk ? risk+' <span style="font-size:12px;color:var(--warn)">'+T("天","days")+'</span>' : '0 <span style="font-size:12px;color:var(--accent)">'+T("天","days")+'</span>';
-  const m=new Date().getMonth()+1;
-  if(m<=3||m>=11) $("h-chill").textContent=T("计算中","Calculating");
-  else $("h-chill").textContent=window.__chill!=null?(window.__chill+" h"):T("见下方","see below");
+  const m=monthOf(G.today);
+  if(m<=3||m>=11) $("h-chill").textContent=G.chill!=null?(G.chill+" h"):T("计算中","Calculating");
+  else $("h-chill").textContent=G.chill!=null?(G.chill+" h"):T("见下方","see below");
 }
 
 /* ---------- 事件总线 ----------
@@ -1170,17 +1248,13 @@ function buildEvents(rd){
     if(pw.some(w=>date>=w.start&&date<=w.end)) add(date,{k:"pest",cls:"ct-pest",label:L.pest,tip:T("梨小食心虫防治窗口","Oriental fruit moth spray window")});
   }
   if(g.bloom){
-    const bd=new Date(g.bloom);
     for(const v of varieties(g.idx)){
-      const hd=new Date(bd); hd.setDate(hd.getDate()+v[2]);
-      add(hd.toLocaleDateString("sv-SE"),{k:"harvest",cls:"ct-harvest",label:L.pick+vName(v),tip:T(vName(v)+" 估算采收窗口（盛花+"+v[2]+" 天）",vName(v)+" pick window (full bloom +"+v[2]+" d)")});
+      const hd=addDaysISO(g.bloom,v[2]);
+      add(hd,{k:"harvest",cls:"ct-harvest",label:L.pick+vName(v),tip:T(vName(v)+" 估算采收窗口（盛花+"+v[2]+" 天）",vName(v)+" pick window (full bloom +"+v[2]+" d)")});
     }
-    const t1=new Date(bd); t1.setDate(t1.getDate()+25);
-    const t2=new Date(bd); t2.setDate(t2.getDate()+35);
-    const t3=new Date(bd); t3.setDate(t3.getDate()+56);
-    add(t1.toLocaleDateString("sv-SE"),{k:"thin",cls:"ct-thin",label:L.thin,tip:T("疏果定果开始（盛花后约 25 天），10 天内完成","Fruit thinning starts (~25 d after full bloom), finish within 10 days")});
-    add(t2.toLocaleDateString("sv-SE"),{k:"bag",cls:"ct-bag",label:L.bag,tip:T("套袋开始（盛花后约 35 天，疏果完成后进行）","Bagging starts (~35 d after full bloom, after thinning)")});
-    add(t3.toLocaleDateString("sv-SE"),{k:"bag",cls:"ct-bag",label:L.bag,tip:T("套袋收尾（中晚熟品种最迟这天前后完成）","Finish bagging (mid/late varieties by this day)")});
+    add(addDaysISO(g.bloom,25),{k:"thin",cls:"ct-thin",label:L.thin,tip:T("疏果定果开始（盛花后约 25 天），10 天内完成","Fruit thinning starts (~25 d after full bloom), finish within 10 days")});
+    add(addDaysISO(g.bloom,35),{k:"bag",cls:"ct-bag",label:L.bag,tip:T("套袋开始（盛花后约 35 天，疏果完成后进行）","Bagging starts (~35 d after full bloom, after thinning)")});
+    add(addDaysISO(g.bloom,56),{k:"bag",cls:"ct-bag",label:L.bag,tip:T("套袋收尾（中晚熟品种最迟这天前后完成）","Finish bagging (mid/late varieties by this day)")});
   }
   let dry=0; const dryEnd=[];
   for(let i=g.idxToday;i>=0;i--){ const p=d.precipitation_sum[i]; if(p!=null&&p>=1) break; dry++; dryEnd.push(t[i]); }
@@ -1213,11 +1287,9 @@ function buildPlan(rd){
     if(month>=5&&month<=9&&tm>=16&&wetHi&&lastD!==t[i]){ A.push({date:t[i],lv:"yel",title:T("这几天小桃容易得疮痂病","Scab weather ahead"),why:T("高温高湿天气，疮痂病最容易上幼果","Hot, humid weather hits young fruit with scab"),how:T("落花后到采前一个半月是关键，提前 1–2 天打保护剂；用什么药听科技小院和植保站的","The window from petal fall to 6 weeks before picking is critical — spray protectants 1–2 days ahead; follow local extension for products")}); lastD=t[i]; }
   }
   if(g.bloom){
-    const bd=new Date(g.bloom);
     for(const v of varieties(g.idx)){
-      const hd=new Date(bd); hd.setDate(hd.getDate()+v[2]);
-      const left=Math.round((hd-new Date(g.today))/86400000);
-      const w=hd.toLocaleDateString("sv-SE");
+      const w=addDaysISO(g.bloom,v[2]);
+      const left=daysBetweenISO(w,g.today);
       if(left>=0&&left<=30){
         if(left<=3) A.push({date:g.today,lv:"red",title:T(vName(v)+"该摘了！",vName(v)+" is ready to pick!"),why:T("今年大约 "+fmtDate(w)+" 前后成熟（还剩 "+left+" 天）","Ripens around "+fmtDate(w)+" this year ("+left+" days left)"),how:T("按桃子成熟度分批摘；盯着天气预报挑晴天摘；提前把纸箱/礼盒和买家联系好","Pick in passes by ripeness; watch the forecast and pick on a dry day; line up boxes/gift packs and buyers early")});
         else if(left<=10) A.push({date:g.today,lv:"yel",title:T(vName(v)+"快熟了，开始准备",vName(v)+" is almost ripe — start preparing"),why:T("预计 "+fmtDate(w)+" 前后能采（还剩 "+left+" 天）","Pick expected around "+fmtDate(w)+" ("+left+" days away)"),how:T("叫好人手、备好筐和包装、联系电商或客商；看这周哪天晴就定哪天摘","Book pickers, crates and packaging, contact e-commerce or traders; pick the first clear day this week")});
@@ -1225,9 +1297,9 @@ function buildPlan(rd){
       }
     }
     const mk=(off,lvNear,ti,wi,hi)=>{
-      const d2=new Date(bd); d2.setDate(d2.getDate()+off);
-      const left=Math.round((d2-new Date(g.today))/86400000);
-      if(left>=-5&&left<=35) A.push({date:left<0?g.today:d2.toLocaleDateString("sv-SE"),lv:left<=7?lvNear:"ok",title:T(ti[0],ti[1]),why:T(wi[0],wi[1]),how:T(hi[0],hi[1])});
+      const d2=addDaysISO(g.bloom,off);
+      const left=daysBetweenISO(d2,g.today);
+      if(left>=-5&&left<=35) A.push({date:left<0?g.today:d2,lv:left<=7?lvNear:"ok",title:T(ti[0],ti[1]),why:T(wi[0],wi[1]),how:T(hi[0],hi[1])});
     };
     mk(25,"yel",
       ["疏果定果：这 10 天把多余的桃疏掉","Thinning week: knock off the excess fruit"],
@@ -1288,9 +1360,9 @@ function fbCopy(txt){
 
 /* ---------- 月历 ---------- */
 function calMove(n){ G.calM+=n; while(G.calM<0){G.calM+=12;G.calY--;} while(G.calM>11){G.calM-=12;G.calY++;} renderCal(); }
-function calToday(){ const n=new Date(); G.calY=n.getFullYear(); G.calM=n.getMonth(); renderCal(); }
+function calToday(){ const iso=todayISO(); G.calY=Number(iso.slice(0,4)); G.calM=monthOf(iso)-1; renderCal(); }
 function renderCal(){
-  if(!G.calY){ const n=new Date(); G.calY=n.getFullYear(); G.calM=n.getMonth(); }
+  if(!G.calY){ const iso=todayISO(); G.calY=Number(iso.slice(0,4)); G.calM=monthOf(iso)-1; }
   const y=G.calY, m=G.calM;
   $("cal-title").textContent = T(y+" 年 "+(m+1)+" 月",(m+1)+"/"+y);
   const cpb=$("cal-pheno"); if(cpb) cpb.style.display=G.pheno?"":"none";   /* 物候人工修正徽标 */
@@ -1309,10 +1381,10 @@ function renderCal(){
   for(let i=0;i<tail;i++) html+='<div class="cal-cell dim"></div>';
   $("cal-grid").innerHTML=html;
   let bar="";
-  const base=new Date();
+  const base=dateUTC(todayISO());
   for(let off=-2;off<=9;off++){
-    const dd=new Date(base.getFullYear(),base.getMonth()+off,1);
-    const yy=dd.getFullYear(), mm=dd.getMonth();
+    const dd=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+off,1));
+    const yy=dd.getUTCFullYear(), mm=dd.getUTCMonth();
     let cnt=0;
     for(const iso in G.events){ if(iso.startsWith(yy+"-"+pad(mm+1))) cnt+=G.events[iso].length; }
     const on=(yy===y&&mm===m)?" on":"";
@@ -1394,6 +1466,7 @@ function renderF1(){
     s+="</svg>";
     $("chart-f1").innerHTML=s;
   }
+  renderHourlyFrost();
   $("f1-table").innerHTML="<tr><th>"+T("物候阶段","Phenological stage")+"</th><th>"+T("临界温度(℃)","Critical temp (°C)")+"</th><th>T10</th><th>T90</th></tr>"+
     STAGES.map(s=>{ return "<tr><td>"+stName(s)+"</td><td>"+T("T10 = 这个温度下约一成花会受冻；T90 = 约九成花受冻","T10 = ~10% of blooms damaged; T90 = ~90% damaged")+"</td><td class='mono'>"+s.t10+"</td><td class='mono'>"+s.t90+"</td></tr>"; }).join("");
 }
@@ -1416,20 +1489,32 @@ async function loadReplay(){
     box.innerHTML="<table class='tb'><tr><th>"+T("年份","Year")+"</th><th>"+T("那年开花大约在","Bloom was around")+"</th><th>"+T("险些受冻的天数","Near-miss frost days")+"</th><th>"+T("会严重受冻的天数","Severe frost days")+"</th></tr>"+rows.join("")+"</table>";
   }catch(e){ box.innerHTML='<p class="err">'+T("往年数据暂时无法获取，请稍后重试。","Past-year data unavailable — try again later.")+'</p>'; }
 }
-async function renderF2(force){
-  const body=$("f2-body"); const now=new Date(); const m=now.getMonth()+1;
-  let start,end,label;
-  if(m>=11){ start=now.getFullYear()+"-11-01"; end=(now.getFullYear()+1)+"-03-31"; label=T("本休眠季","This dormancy season: "); }
-  else if(m<=3){ start=(now.getFullYear()-1)+"-11-01"; end=now.getFullYear()+"-03-31"; label=T("本休眠季","This dormancy season: "); }
-  else { start=(now.getFullYear()-1)+"-11-01"; end=now.getFullYear()+"-03-31"; label=T("刚过去的这个冬天，","Last winter: "); }
+let chillSeq=0;
+async function renderF2(force,seq=refreshSeq,idx=G.loc){
+  const body=$("f2-body"), today=G.today, m=monthOf(today), year=Number(today.slice(0,4));
+  const ownSeq=++chillSeq;
+  let start,end,currentSeason;
+  if(m>=11){ start=year+"-11-01"; end=(year+1)+"-03-31"; currentSeason=true; }
+  else if(m<=3){ start=(year-1)+"-11-01"; end=year+"-03-31"; currentSeason=true; }
+  else { start=(year-1)+"-11-01"; end=year+"-03-31"; currentSeason=false; }
+  const historicalEnd=addDaysISO(today,-1);
+  if(end>historicalEnd) end=historicalEnd;
+  if(end<start){
+    G.chill=0; updateHero();
+    body.innerHTML='<p class="muted">'+T("本休眠季刚开始，历史低温数据尚未更新。","This dormancy season has just begun; historical chill data is not available yet.")+'</p>';
+    $("chart-f2").innerHTML="";
+    return;
+  }
   body.innerHTML='<p class="muted">'+T("正在翻这个冬天的气温记录…","Digging through this winter's temperature records…")+'</p>';
-  const d=await fetchJSON(arcHourlyURL(start,end),"chill"+start+":"+G.loc,force);
+  const d=await fetchJSON(arcHourlyURL(start,end,idx),"chill"+start+":"+end+":"+idx,force);
+  if(seq!==refreshSeq || ownSeq!==chillSeq || idx!==G.loc) return;
   let chill=0; const monthly={};
   for(let i=0;i<d.hourly.time.length;i++){
     const v=d.hourly.temperature_2m[i];
     if(v!=null&&v>=0&&v<=7.2){ chill++; const mo=d.hourly.time[i].slice(0,7); monthly[mo]=(monthly[mo]||0)+1; }
   }
-  window.__chill=chill; updateHero();
+  G.chill=chill; updateHero();
+  const label=currentSeason?T("本休眠季，","This dormancy season: "):T("刚过去的这个冬天，","Last winter: ");
   const pct=Math.min(100,Math.round(chill/1200*100));
   const light=chill>=800?"l-ok":chill>=400?"l-yel":"l-red";
   body.innerHTML='<p class="big"><span class="light '+light+'"></span>'+label+T("桃树已攒够 <b>"+chill+"</b> 小时低温（需要约 700–1200 小时）","trees have banked <b>"+chill+"</b> chill hours (about 700–1,200 needed)")+"</p>"+
@@ -1460,12 +1545,12 @@ function renderF3(){
   $("variety-note").textContent=T(v[3],v[4]);
   const body=$("f3-body");
   if(!G.bloom){ body.innerHTML=(G.pheno?'<p style="margin:0 0 8px"><span class="badge b-ok">'+T("按您上报的物候计算","Using your reported phenology")+"</span></p>":"")+'<p class="muted">'+T("等春天开花的日子估出来后，这里就显示各品种的采摘时间…","Once this spring's bloom date is estimated, pick windows for each variety appear here…")+'</p>'; return; }
-  const hd=new Date(G.bloom); hd.setDate(hd.getDate()+v[2]);
-  const days=Math.round((hd-new Date())/86400000);
-  const w1=new Date(hd); w1.setDate(w1.getDate()-3);
-  const w2=new Date(hd); w2.setDate(w2.getDate()+7);
+  const hd=addDaysISO(G.bloom,v[2]);
+  const days=daysBetweenISO(hd,G.today);
+  const w1=addDaysISO(hd,-3);
+  const w2=addDaysISO(hd,7);
   const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const f=x=>LANG==="zh"?(x.getMonth()+1)+" 月 "+x.getDate()+" 日":MON[x.getMonth()]+" "+x.getDate();
+  const f=iso=>LANG==="zh"?monthOf(iso)+" 月 "+Number(iso.slice(8))+" 日":MON[monthOf(iso)-1]+" "+Number(iso.slice(8));
   let level="l-ok",word=T("未到采收准备期，正常管理即可","Not in the pick-prep window — normal care for now");
   if(days<0){ word=T("按今年花期推算，本品种采收期已过","By this year's bloom estimate, this variety's pick window has passed"); level="l-gry"; }
   else if(days<=21){ word=T("临近采收期：建议提前安排人手与销路，成熟后择晴天采收","Getting close: book pickers and buyers early, and pick on a dry day once ripe"); level="l-yel"; }
@@ -1481,33 +1566,33 @@ function renderF3(){
   $("f3-note").innerHTML=T("未来 16 天哪天晴（熟了就挑晴天摘）：","Clear days in the next 16 (pick on a dry day once ripe):");
   body.insertAdjacentHTML("beforeend",'<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:8px">'+cells.join("")+"</div>");
   const W=420,rowH=17,pl=58,pr=10;
-  const spans=varieties().map(v2=>{ const a=new Date(G.bloom); a.setDate(a.getDate()+v2[2]-3);
-    const b=new Date(G.bloom); b.setDate(b.getDate()+v2[2]+7); return [vName(v2),a,b]; });
-  const minD=new Date(G.bloom);
-  let maxD=new Date(G.bloom);
+  const spans=varieties().map(v2=>[vName(v2),dateUTC(addDaysISO(G.bloom,v2[2]-3)),dateUTC(addDaysISO(G.bloom,v2[2]+7))]);
+  const minD=dateUTC(G.bloom);
+  let maxD=dateUTC(G.bloom);
   spans.forEach(sp=>{ if(sp[2]>maxD) maxD=sp[2]; });
   const total=(maxD-minD)/86400000||1;
   const xOf=d=>pl+((d-minD)/86400000)/total*(W-pl-pr);
   let s='<svg viewBox="0 0 '+W+" "+(spans.length*rowH+30)+'" role="img" aria-label="各品种采摘日历图">';
   // 今天竖线
-  const todayD=new Date(G.today);
+  const todayD=dateUTC(G.today);
   if(todayD>=minD&&todayD<=maxD){
     const xt=xOf(todayD);
     s+='<line x1="'+xt.toFixed(1)+'" y1="2" x2="'+xt.toFixed(1)+'" y2="'+(spans.length*rowH+8)+'" stroke="#047857" stroke-width="1.2" stroke-dasharray="3 3"/>';
     s+='<text x="'+xt.toFixed(1)+'" y="10" font-size="8.5" fill="#047857" text-anchor="middle">'+T("今天","Today")+'</text>';
   }
   // 月份刻度
-  let md=new Date(minD); md.setDate(1); md.setMonth(md.getMonth()+1);
+  let md=new Date(minD); md.setUTCDate(1); md.setUTCMonth(md.getUTCMonth()+1);
   while(md<maxD){
     const xm=xOf(md);
     s+='<line x1="'+xm.toFixed(1)+'" y1="14" x2="'+xm.toFixed(1)+'" y2="'+(spans.length*rowH+8)+'" stroke="#e7e5e4" stroke-width="1"/>';
-    s+='<text x="'+xm.toFixed(1)+'" y="'+(spans.length*rowH+20)+'" font-size="8.5" fill="#a8a29e" text-anchor="middle">'+(md.getMonth()+1)+T("月","")+"</text>";
-    md.setMonth(md.getMonth()+1);
+    s+='<text x="'+xm.toFixed(1)+'" y="'+(spans.length*rowH+20)+'" font-size="8.5" fill="#a8a29e" text-anchor="middle">'+(md.getUTCMonth()+1)+T("月","")+"</text>";
+    md.setUTCMonth(md.getUTCMonth()+1);
   }
   spans.forEach((sp,i)=>{
     const x1=xOf(sp[1]), x2=xOf(sp[2]);
     s+='<text x="0" y="'+(i*rowH+20)+'" font-size="9.5" fill="#1c1917" font-weight="600">'+sp[0]+"</text>";
-    s+='<rect x="'+x1.toFixed(1)+'" y="'+(i*rowH+12)+'" width="'+Math.max(6,x2-x1).toFixed(1)+'" height="9" rx="4.5" fill="#c2410c" opacity=".78"><title>'+sp[0]+T("：大约 "+sp[1].toLocaleDateString("sv-SE")+" 起能采，"+sp[2].toLocaleDateString("sv-SE")+" 前采完",": pickable from ~"+sp[1].toLocaleDateString("sv-SE")+" to "+sp[2].toLocaleDateString("sv-SE"))+"</title></rect>";
+    const start=sp[1].toISOString().slice(0,10), end=sp[2].toISOString().slice(0,10);
+    s+='<rect x="'+x1.toFixed(1)+'" y="'+(i*rowH+12)+'" width="'+Math.max(6,x2-x1).toFixed(1)+'" height="9" rx="4.5" fill="#c2410c" opacity=".78"><title>'+sp[0]+T("：大约 "+start+" 起能采，"+end+" 前采完",": pickable from ~"+start+" to "+end)+"</title></rect>";
   });
   $("chart-f3").innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-3);margin-bottom:4px"><span style="display:inline-block;width:14px;height:8px;border-radius:4px;background:#c2410c;opacity:.75"></span>= '+T("可采摘的日子","days you can pick")+"</div>"+s;
 }
@@ -1535,15 +1620,13 @@ function renderF4(){
 /* ---------- 浇水决策（水分盈亏法） ---------- */
 const KC_MONTHS = {1:.3,2:.4,3:.6,4:.6,5:.65,6:.8,7:.9,8:.9,9:.7,10:.6,11:.3,12:.3};
 function renderF5(){
+  renderWaterSummary();
   const body=$("f5-body");
   if(!G.fc||G.idxToday<0) return;
   const d=G.fc.daily,t=d.time;
   const et0=d.et0_fao_evapotranspiration;
-  let p30=0,etc30=0,et0days=0;
-  for(let i=Math.max(0,G.idxToday-29);i<=G.idxToday;i++){
-    const p=d.precipitation_sum[i]; if(p!=null) p30+=p;
-    if(et0&&et0[i]!=null){ etc30+=et0[i]*KC_MONTHS[monthOf(t[i])]; et0days++; }
-  }
+  const water=waterBalance(G), pRaw=water.rain, etc30=water.use, et0days=water.et0days;
+  let p30=pRaw;
   let rain7=0;
   for(let i=G.idxToday+1;i<=Math.min(G.idxToday+7,t.length-1);i++){ const p=d.precipitation_sum[i]; if(p!=null) rain7+=p; }
   p30=Math.round(p30); rain7=Math.round(rain7);
@@ -1555,14 +1638,14 @@ function renderF5(){
   }
   if(!et0||et0days<15){
     let dry=0;
-    for(let i=G.idxToday;i>=0;i--){ const p=d.precipitation_sum[i]; if(p!=null&&p>=1) break; dry++; }
+    for(let i=G.idxToday;i>=0;i--){ const p=orchardRecords()[t[i]]?.rain??d.precipitation_sum[i]; if(p!=null&&p>=1) break; dry++; }
     body.innerHTML='<p class="big"><span class="light '+(dry>=10?"l-yel":"l-ok")+'"></span>'+(dry>=10?T("已经 "+dry+" 天没下过像样的雨，扒土看看墒情",dry+" days without real rain — dig and check soil moisture"):T("近期降水正常，暂不用特意浇水","Recent rainfall is normal — no special watering needed"))+"</p>"+
       '<p class="muted">'+T("近 30 天降雨约 <b class=\"mono\">"+p30+"</b> mm。蒸发量数据暂时取不到，先按降雨和连旱天数提醒；数据恢复后这里会显示完整的水分账。","Last 30 days: about <b class=\"mono\">"+p30+"</b> mm of rain. Evaporation data is unavailable, so for now reminders rely on rainfall and dry streaks; the full water balance returns once data recovers.")+"</p>"+
       (rain7>=15?'<p class="muted" style="margin-top:6px">'+T("💡 未来 7 天预计有雨 <b class=\"mono\">"+rain7+"</b> mm，不着急可以先等这场雨。","💡 Rain expected in the next 7 days: <b class=\"mono\">"+rain7+"</b> mm — you can afford to wait for it.")+"</p>":"");
     return;
   }
-  const eff=0.75*p30;
-  const bal=Math.round(eff-etc30);
+  const eff=0.75*pRaw;
+  const bal=Math.round(eff+water.irrigation-etc30);
   let light,word,adv;
   if(bal>=0){ light="l-ok"; word=T("近期水分充足，暂时不用浇","Moisture is adequate — no watering for now"); adv=T("按平常节奏管理就行。桃特别怕涝，别大水漫灌太勤。","Manage as usual. Peaches hate waterlogging — don't over-flood."); }
   else if(bal>=-20){ light="l-yel"; word=T("水分有点亏缺，留意着","Slight moisture deficit — keep an eye on it"); adv=T("扒开树盘下的土看看：捏不成团就该浇了；浇就浇透（一次 30–40 mm），别天天溜边水。","Dig under the canopy: if soil won't ball in your fist, it's time to water — deeply (30–40 mm at once), not daily sprinkles."); }
@@ -1573,7 +1656,7 @@ function renderF5(){
       '<div class="kpi"><div class="kv" style="color:var(--info)">'+p30+'<span style="font-size:12px;color:var(--ink-3)"> mm</span></div><div class="kl">'+T("近 30 天降雨","Rain, last 30 days")+'</div></div>'+
       '<div class="kpi"><div class="kv" style="color:var(--violet)">'+Math.round(etc30)+'<span style="font-size:12px;color:var(--ink-3)"> mm</span></div><div class="kl">'+T("桃树同期需水","Tree water use, same period")+'</div></div>'+
       '<div class="kpi"><div class="kv" style="color:'+(bal>=0?"var(--accent)":"var(--danger)")+'">'+(bal>0?"+":"")+bal+'<span style="font-size:12px;color:var(--ink-3)"> mm</span></div><div class="kl">'+T("水分盈亏","Water balance")+"</div></div>"+
-    "</div>"+rainTip+
+    "</div>"+'<p class="note">'+T("已计入近 30 天实测降雨 "+water.measuredDays+" 天、实际浇水 "+water.irrigation.toFixed(1)+" mm。","Includes "+water.measuredDays+" days of measured rain and "+water.irrigation.toFixed(1)+" mm of irrigation in the last 30 days.")+"</p>"+rainTip+
     '<p class="muted" style="margin-top:8px">'+adv+"</p>"+
     '<p class="note">'+T("mm 就是「一亩地积 1 毫米深的水」，1 mm ≈ 每亩 0.67 立方水。需水按参考蒸发量 ET₀ × 桃树各月系数折算（6–8 月果期最大），降雨按 75% 算有效。","1 mm of rain ≈ 1 L per m² (≈ 10 m³ per ha). Water use = reference ET₀ × peach crop coefficient by month (peaks Jun–Aug); 75% of rain counts as effective.")+"</p>";
 }
@@ -1590,9 +1673,7 @@ function pestWindows(rd){
     let peak=null;
     for(const d of keys){ if(d>=g.bloom && g.gddMap72[d]>=target){ peak=d; break; } }
     if(!peak) continue;
-    const s=new Date(peak); s.setDate(s.getDate()-PEST.win);
-    const e=new Date(peak); e.setDate(e.getDate()+PEST.win);
-    out.push({ g:gen, target, peak, start:s.toLocaleDateString("sv-SE"), end:e.toLocaleDateString("sv-SE") });
+    out.push({ g:gen, target, peak, start:addDaysISO(peak,-PEST.win), end:addDaysISO(peak,PEST.win) });
   }
   return out;
 }
@@ -1619,7 +1700,7 @@ function renderPest(){
     word=T(gname(w.g)+"防治窗口进行中（到 "+fmtDate(w.end)+"）",gname(w.g)+" spray window open (until "+fmtDate(w.end)+")");
   }else if(upcoming.length){
     light="l-yel"; const w=upcoming[0];
-    const days=Math.round((new Date(w.start)-new Date(G.today))/86400000);
+    const days=daysBetweenISO(w.start,G.today);
     word=T("距 "+gname(w.g)+"防治窗口约 "+days+" 天（"+fmtDate(w.start)+" 起）","About "+days+" days to the "+gname(w.g)+" window (from "+fmtDate(w.start)+")");
   }else{
     light="l-ok";
@@ -1639,7 +1720,7 @@ function renderPest(){
 }
 
 /* ---------- 我的记录：导出 / 导入（换机备份） ---------- */
-const MYDATA_KEYS = k => k.startsWith("phenologyOverride:") || k === "taoyuan-lang" || k === "welcomeSeen" || k === "myOrchards";
+const MYDATA_KEYS = k => /^orchardRecords:v1:\d+$/.test(k) && Number(k.split(":")[2])<LOCATIONS.length || k.startsWith("phenologyOverride:") || k === "taoyuan-lang" || k === "welcomeSeen" || k === "myOrchards";
 function mydataKeys(){
   const out=[];
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(MYDATA_KEYS(k)) out.push(k); }
@@ -1649,11 +1730,11 @@ function renderMyData(){
   const body=$("mydata-body"); if(!body) return;
   const keys=mydataKeys();
   if(!keys.length){
-    body.innerHTML='<p class="muted">'+T("本地还没有记录：上报过花期后，这里会列出保存的内容。","No local records yet — report a bloom stage and it will show up here.")+"</p>";
+    body.innerHTML='<p class="muted">'+T("本地还没有记录：填写实测或上报花期后，这里会列出保存的内容。","No local records yet — save observations or report a bloom stage to see them here.")+"</p>";
   }else{
     const rows=keys.map(k=>{
       const v=localStorage.getItem(k)||"";
-      const label=k.startsWith("phenologyOverride:")
+      const label=k.startsWith("orchardRecords:v1:") ? T("桃园实测和浇水记录（产区 "+k.split(":")[2]+"）","Orchard observations and irrigation (region "+k.split(":")[2]+")") : k.startsWith("phenologyOverride:")
         ? T("物候上报（产区 "+(k.split(":")[1]!==undefined?LOCATIONS[k.split(":")[1]]?LOCATIONS[k.split(":")[1]][0]:k.split(":")[1]:"?")+"）","Phenology report (region "+k.split(":")[1]+")")
         : k==="myOrchards" ? T("我的园子收藏","My orchards")
         : k==="taoyuan-lang" ? T("界面语言","Language preference") : T("欢迎弹窗版本","Welcome card version");
@@ -1685,6 +1766,11 @@ function importData(input){
     if(!obj||obj.app!=="taoyuan"||!obj.data||typeof obj.data!=="object"){
       showToast(T("文件结构不符，未导入","Unrecognized file structure — not imported")); return;
     }
+    for(const k in obj.data){
+      if(k.startsWith("orchardRecords:v1:") && (!MYDATA_KEYS(k)||!validOrchardData(obj.data[k]))){
+        showToast(T("实测记录格式不符，未导入","Invalid orchard records — nothing imported")); return;
+      }
+    }
     if(!confirm(T("导入会覆盖手机上现有的记录，确定继续吗？","Importing will overwrite existing records on this device. Continue?"))) return;
     let n=0;
     for(const k in obj.data){
@@ -1693,11 +1779,186 @@ function importData(input){
     showToast(T("已导入 "+n+" 条记录","Imported "+n+" records"));
     applyStaticLang();
     reapplyPheno();
+    renderRecordForms(true);
     renderMyData();
     refreshMyOrchards();   /* 导入可能恢复了「我的园子」收藏，重建摘要条 */
   };
   rd.readAsText(f);
   input.value="";
+}
+
+/* ---------- 实测记录：每个产区每天一条，长期保存，不使用气象缓存的过期时间 ---------- */
+const orchardKey = (idx=G.loc) => "orchardRecords:v1:"+idx;
+function validRecordDate(date){ return typeof date==="string" && /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(+dateUTC(date)) && dateUTC(date).toISOString().slice(0,10)===date; }
+function validOrchardData(raw){
+  try{
+    const o=typeof raw==="string"?JSON.parse(raw):raw;
+    if(!o||o.ver!==1||!o.days||typeof o.days!=="object"||Array.isArray(o.days)) return false;
+    return Object.entries(o.days).every(([date,r])=>validRecordDate(date)&&r&&typeof r==="object"&&!Array.isArray(r)&&
+      ["minTemp","rain","irrigation","modelMin","modelRain"].every(k=>r[k]==null||(Number.isFinite(r[k])&&r[k]>=(k==="minTemp"||k==="modelMin"?-90:0)&&r[k]<=(k==="minTemp"||k==="modelMin"?60:1000)))&&
+      (r.harvest==null||(Number.isInteger(r.harvest)&&r.harvest>=0&&r.harvest<50))&&
+      (r.soil==null||["dry","moist","wet"].includes(r.soil)));
+  }catch(e){ return false; }
+}
+function orchardRecords(idx=G.loc){
+  try{ const raw=localStorage.getItem(orchardKey(idx)); if(validOrchardData(raw)) return JSON.parse(raw).days; }catch(e){}
+  return {};
+}
+function storeOrchardRecords(days){
+  try{ localStorage.setItem(orchardKey(),JSON.stringify({ver:1,days})); return true; }
+  catch(e){ showToast(T("记录没能保存，请检查浏览器存储空间。","Could not save — check browser storage.")); return false; }
+}
+function optionalNumber(id,min,max){
+  const value=$(id).value.trim(); if(value==="") return null;
+  const n=Number(value); if(!Number.isFinite(n)||n<min||n>max) throw new Error("Invalid number");
+  return n;
+}
+function recordDate(id){ const date=$(id).value; if(!validRecordDate(date)||date>todayISO()) throw new Error("Invalid date"); return date; }
+function snapshotRecord(date,r){
+  if(!G.fc||G.dataLoc!==G.loc) return;
+  const i=G.fc.daily.time.indexOf(date); if(i<0) return;
+  r.modelMin=G.fc.daily.temperature_2m_min[i]; r.modelRain=G.fc.daily.precipitation_sum[i];
+}
+function recordsChanged(){ renderObservationHistory(); renderWaterSummary(); renderMyData(); if(G.fc) renderF5(); }
+function saveObservation(){
+  try{
+    const date=recordDate("obs-date"), days=orchardRecords(), r={...days[date]};
+    const min=optionalNumber("obs-temp",-90,60), rain=optionalNumber("obs-rain",0,1000), harvest=$("obs-harvest").value;
+    if(min===null&&rain===null&&harvest===""&&!days[date]) throw new Error("Empty record");
+    if(min===null) delete r.minTemp; else r.minTemp=min;
+    if(rain===null) delete r.rain; else r.rain=rain;
+    if(harvest==="") delete r.harvest; else r.harvest=Number(harvest);
+    snapshotRecord(date,r); days[date]=r;
+    if(storeOrchardRecords(days)){ recordsChanged(); showToast(T("实测记录已保存，同一天再保存会更新这条记录。","Observation saved. Saving the same date updates this record.")); }
+  }catch(e){ showToast(T("请填写有效的日期和至少一项实测记录。","Enter a valid date and at least one observation.")); }
+}
+function saveWaterRecord(){
+  try{
+    const date=recordDate("water-date"), days=orchardRecords(), r={...days[date]};
+    const mm=optionalNumber("water-mm",0,1000), soil=$("water-soil").value;
+    if(mm===null&&soil===""&&!days[date]) throw new Error("Empty record");
+    if(mm===null) delete r.irrigation; else r.irrigation=mm;
+    if(soil==="") delete r.soil; else r.soil=soil;
+    days[date]=r;
+    if(storeOrchardRecords(days)){ recordsChanged(); showToast(T("浇水记录已保存，水分账已更新。","Irrigation saved; the water balance is updated.")); }
+  }catch(e){ showToast(T("请填写有效日期、浇水量或墒情。","Enter a valid date and irrigation amount or soil condition.")); }
+}
+function fillObservation(){
+  const r=orchardRecords()[$("obs-date").value]||{};
+  $("obs-temp").value=r.minTemp??""; $("obs-rain").value=r.rain??""; $("obs-harvest").value=r.harvest??"";
+}
+function fillWaterRecord(){
+  const r=orchardRecords()[$("water-date").value]||{};
+  $("water-mm").value=r.irrigation??""; $("water-soil").value=r.soil??"";
+}
+function editOrchardRecord(date){ $("obs-date").value=date; $("water-date").value=date; fillObservation(); fillWaterRecord(); $("obs-date").focus(); }
+function deleteOrchardRecord(date){
+  const days=orchardRecords(); delete days[date];
+  if(storeOrchardRecords(days)){ fillObservation(); fillWaterRecord(); recordsChanged(); }
+}
+let recordFormLoc=null;
+function renderRecordForms(reset=false){
+  const labels={
+    "obs-title":T("📝 我家桃园的实测记录","📝 My orchard observations"),
+    "obs-note":locName()+T(" · 记录只存本机。最低温和采收日供对照，实测降雨会计入水分账。"," · Saved on this device. Compare minimum temperatures and picking dates; measured rain enters the water balance."),
+    "obs-date-label":T("记录日期","Date"),"obs-temp-label":T("园内最低温（℃）","Orchard minimum (°C)"),"obs-rain-label":T("全天实测降雨（mm）","Measured daily rain (mm)"),"obs-harvest-label":T("今天采收的品种（选填）","Variety picked (optional)"),"obs-save":T("保存实测记录","Save observation"),"obs-history-label":T("查看、修改记录（最近 10 条）","View / edit records (latest 10 dates)"),
+    "water-title":T("💧 记一下实际浇水和墒情","💧 Log irrigation and soil condition"),"water-date-label":T("浇水 / 观察日期","Irrigation / observation date"),"water-mm-label":T("当天总浇水量（mm）","Total irrigation that day (mm)"),"water-soil-label":T("实地看土的墒情（选填）","Observed soil condition (optional)"),"water-save":T("保存并更新水分账","Save and update balance"),
+    "water-note":T("填当天真正浇到地里的总水量，同一天再保存会替换旧值。1 mm = 每平方米 1 升水；实测降雨替换当天模式值。墒情用于提醒核对，不直接换算成水量。","Enter the total water applied to the soil that day; saving again replaces the previous value. 1 mm = 1 L/m². Measured rain replaces that day's model value. Soil observations are a cross-check, not a water-volume estimate.")
+  };
+  for(const id in labels) $(id).textContent=labels[id];
+  const harvest=$("obs-harvest"), oldHarvest=harvest.value;
+  harvest.innerHTML='<option value="">'+T("未采收 / 不填写","No picking / leave blank")+'</option>'+varieties().map((v,i)=>'<option value="'+i+'">'+vName(v)+'</option>').join("");
+  harvest.value=oldHarvest;
+  const soil=$("water-soil"), oldSoil=soil.value;
+  soil.innerHTML=[['',T("未观察","Not checked")],['dry',T("偏干","Dry")],['moist',T("湿润","Moist")],['wet',T("很湿 / 积水","Very wet / standing water")]].map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join(""); soil.value=oldSoil;
+  for(const id of ["obs-date","water-date"]){ $(id).max=todayISO(); }
+  if(reset||recordFormLoc!==G.loc){
+    recordFormLoc=G.loc; $("obs-date").value=todayISO(); $("water-date").value=todayISO(); fillObservation(); fillWaterRecord();
+  }
+  renderObservationHistory(); renderWaterSummary();
+}
+function renderObservationHistory(){
+  const days=orchardRecords(), dates=Object.keys(days).sort().reverse().slice(0,10);
+  $("obs-history").innerHTML=dates.length?dates.map(date=>{
+    const r=days[date], bits=[];
+    if(r.minTemp!=null){
+      bits.push(T("最低温 ","Minimum ")+r.minTemp+"°C");
+      if(r.modelMin!=null) bits.push(T("保存时模式温度 ","Model temperature at save ")+r.modelMin+"°C · "+T("实测差值 ","Measured difference ")+(r.minTemp-r.modelMin).toFixed(1)+"°C");
+    }
+    if(r.rain!=null) bits.push(T("实测雨 ","Measured rain ")+r.rain+" mm");
+    if(r.irrigation!=null) bits.push(T("已浇水 ","Irrigation ")+r.irrigation+" mm");
+    if(r.soil) bits.push(T("墒情：","Soil: ")+({dry:T("偏干","dry"),moist:T("湿润","moist"),wet:T("很湿 / 积水","very wet / standing water")})[r.soil]);
+    if(r.harvest!=null){ const v=varieties()[r.harvest]; if(v){ bits.push(T("已采收：","Picked: ")+vName(v)); if(G.bloom&&G.dataLoc===G.loc) bits.push(T("比当前推算采收日 ","Difference from current estimated picking date: ")+daysBetweenISO(date,addDaysISO(G.bloom,v[2]))+T(" 天（正数为较晚）"," days (positive = later)")); } }
+    return '<div class="record-row"><b>'+date+'</b><p>'+bits.join(" · ")+'</p><div class="record-actions"><button type="button" class="btn-mini" onclick="editOrchardRecord(\''+date+'\')">'+T("修改","Edit")+'</button><button type="button" class="btn-mini" onclick="deleteOrchardRecord(\''+date+'\')">'+T("删除当天记录","Delete date")+'</button></div></div>';
+  }).join(""):'<p class="muted">'+T("这个产区还没有实测记录。","No observations for this region yet.")+'</p>';
+}
+function waterBalance(g){
+  const days=orchardRecords(g.idx??g.loc), start=addDaysISO(g.today,-29), d=g.fc.daily;
+  let rain=0,irrigation=0,use=0,et0days=0,measuredDays=0;
+  for(let i=0;i<d.time.length;i++){
+    const date=d.time[i]; if(date<start||date>g.today) continue;
+    const measured=days[date]?.rain; if(measured!=null) measuredDays++;
+    rain+=measured??d.precipitation_sum[i]??0;
+    if(d.et0_fao_evapotranspiration?.[i]!=null){ use+=d.et0_fao_evapotranspiration[i]*KC_MONTHS[monthOf(date)]; et0days++; }
+  }
+  for(const date in days){ if(date>=start&&date<=g.today) irrigation+=days[date].irrigation??0; }
+  return {rain,irrigation,use,et0days,measuredDays};
+}
+function renderWaterSummary(){
+  const days=orchardRecords(), today=todayISO(), start=addDaysISO(today,-29);
+  const dates=Object.keys(days).filter(d=>d>=start&&d<=today).sort();
+  const total=dates.reduce((sum,d)=>sum+(days[d].irrigation??0),0);
+  const soilDate=dates.filter(d=>days[d].soil).pop();
+  $("water-summary").textContent=T("近 30 天已记浇水 "+total.toFixed(1)+" mm。","Logged irrigation, last 30 days: "+total.toFixed(1)+" mm.")+(soilDate?" "+soilDate+" · "+({dry:T("实地偏干，请结合水分账检查墒情。","Observed dry soil — check moisture alongside the balance."),moist:T("实地湿润，浇前再看墒情。","Observed moist soil — check again before watering."),wet:T("实地很湿或积水，先检查排水，避免继续大水灌。","Observed very wet soil or standing water — check drainage before further irrigation.")})[days[soilDate].soil]:"");
+}
+
+/* ---------- 72 小时防冻：时戳匹配集合成员；缺测不作零度，集合比例不是受冻损失率 ---------- */
+function frostHourRows(fc,ensemble,stage,now=Date.now()){
+  const h=fc?.hourly; if(!h?.time) return [];
+  const eh=ensemble?.hourly, members=eh?Object.keys(eh).filter(k=>/^temperature_2m(?:_member\d+)?$/.test(k)):[];
+  const lookup=new Map((eh?.time||[]).map((t,i)=>[t,i]));
+  const first=Math.floor(now/3600000)*3600, end=first+72*3600;
+  return h.time.map((time,i)=>{
+    if(time<first||time>=end||!Number.isFinite(h.temperature_2m?.[i])) return null;
+    const j=lookup.get(time), values=j===undefined?[]:members.map(k=>eh[k][j]).filter(Number.isFinite);
+    return {time,temp:h.temperature_2m[i],wind:h.wind_speed_10m?.[i],rain:h.precipitation?.[i],
+      low:values.length?Math.min(...values):null,high:values.length?Math.max(...values):null,
+      probability:values.length>=2?Math.round(values.filter(v=>v<=stage.t10).length/values.length*100):null,
+      level:h.temperature_2m[i]<=stage.t90?"severe":h.temperature_2m[i]<=stage.t10?"risk":"ok"};
+  }).filter(Boolean);
+}
+async function loadHourlyFrost(force,seq,idx){
+  const results=await Promise.allSettled([
+    fetchJSON(hourlyFrostURL(idx,false),"frost72:"+idx,force),
+    fetchJSON(hourlyFrostURL(idx,true),"frostEns72:"+idx,force)
+  ]);
+  if(seq!==refreshSeq||idx!==G.loc) return;
+  G.frostHourly=results[0].status==="fulfilled"?results[0].value:null;
+  G.frostEnsemble=results[1].status==="fulfilled"?results[1].value:null;
+  G.frostHourlyStatus=G.frostHourly?"ready":"unavailable"; renderHourlyFrost();
+}
+function renderHourlyFrost(){
+  const body=$("frost-hourly-body"); if(!body) return;
+  $("frost-hourly-title").textContent=T("未来 72 小时逐小时防冻提醒","Hourly frost watch · next 72 hours");
+  if(G.frostHourlyStatus!=="ready"||!G.fc||G.dataLoc!==G.loc){ body.innerHTML='<p class="muted">'+(G.frostHourlyStatus==="unavailable"?T("小时预报暂不可用，请联网后刷新。","Hourly forecast unavailable — reconnect and refresh."):T("正在获取小时预报…","Loading hourly forecast…"))+'</p>'; return; }
+  const st=effStageOf(), rows=frostHourRows(G.frostHourly,G.frostEnsemble,st);
+  if(!rows.length){ body.innerHTML='<p class="muted">'+T("缓存小时预报已过期，不能用于当前防冻提醒，请联网刷新。","Cached hourly forecast is out of date; reconnect and refresh.")+'</p>'; return; }
+  const inSeason=monthOf(G.today)>=2&&monthOf(G.today)<=5||!!G.pheno;
+  const localTime=t=>new Date(t*1000).toLocaleString(T("zh-CN","en-GB"),{timeZone:loc()[4],month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+  const hit=rows.find(r=>r.level!=="ok"), ensembleHit=rows.find(r=>r.probability>0);
+  if(inSeason&&(hit||ensembleHit)) $("frost-hourly-title").textContent+=" · "+localTime((hit||ensembleHit).time)+T(" 低温风险"," cold risk");
+  let message=!inSeason?T("当前不在默认花期，下面的花芽阈值仅供对照；有实际物候可在上方上报。","Outside the default bloom season; bud thresholds below are for comparison. Report your actual stage above."):
+    hit?T("请重点盯住 "+localTime(hit.time)+" 起的低温时段，提前检查园内温度计和防冻准备。","Watch the cold period from "+localTime(hit.time)+"; check orchard thermometers and frost preparations ahead of time."):
+    ensembleHit?T("单次预报未越过阈值，但部分集合成员提示低温可能，请继续留意。","The main forecast stays above the threshold, but some ensemble members indicate a cold risk. Keep watching."):
+    T("当前小时预报没有低于这个阶段 T10 的时段。","No available forecast hour is below this stage's T10.");
+  const stale=[G.frostHourly,G.frostEnsemble].some(d=>d?.__stale);
+  const rangeMissing=!rows.some(r=>r.probability!=null);
+  body.innerHTML='<p class="muted">'+message+'</p><p class="note">'+stName(st)+' · T10 '+st.t10+'°C · T90 '+st.t90+'°C · '+T("产区当地时间","region local time")+'</p>'+
+    (stale?'<p class="note">'+T("含缓存预报，请联网刷新后复核。","Includes cached forecasts; reconnect and refresh to verify.")+'</p>':"")+
+    (rows.length<72?'<p class="note">'+T("当前仅有 "+rows.length+" 个小时的数据，其余时段暂无数据。","Only "+rows.length+" forecast hours available; remaining hours have no data.")+'</p>':"")+
+    (rangeMissing?'<p class="note">'+T("集合预报暂不可用，风险范围与成员比例不显示。","Ensemble forecast unavailable; ranges and member percentages are omitted.")+'</p>':"")+
+    '<div class="frost-hours"><table class="tb"><thead><tr><th>'+T("时间","Time")+'</th><th>'+T("温度 / 提醒","Temp / watch")+'</th><th>'+T("集合范围 / ≤T10","Ensemble range / ≤T10")+'</th><th>'+T("风 / 雨","Wind / rain")+'</th></tr></thead><tbody>'+rows.map(r=>'<tr class="'+(inSeason&&r.level!=="ok"?"hour-"+r.level:"")+'"><td>'+localTime(r.time)+'</td><td>'+r.temp.toFixed(1)+'°C · '+(!inSeason?T("对照","reference"):r.level==="severe"?T("≤T90","≤T90"):r.level==="risk"?T("≤T10","≤T10"):T("阈值以上","above threshold"))+'</td><td>'+(r.probability==null?'–':r.low.toFixed(1)+'–'+r.high.toFixed(1)+'°C / '+r.probability+'%')+'</td><td>'+(Number.isFinite(r.wind)?r.wind+' km/h':'–')+' / '+(Number.isFinite(r.rain)?r.rain+' mm':'–')+'</td></tr>').join("")+'</tbody></table></div>'+
+    '<p class="note">'+T("T10/T90 文献值基于约 30 分钟暴露；小时预报不能精确判断暴露时长。集合比例是 GFS 模型成员低于阈值的比例，不是您家桃园的受冻率。预报为 2 米气温，园内温度请实测核对。","Published T10/T90 values use about 30 minutes of exposure; hourly forecasts cannot resolve that duration. Percentages are GFS members below the threshold, not orchard damage rates. Forecasts are 2 m air temperatures; verify with orchard measurements.")+' <a href="https://extension.psu.edu/orchard-frost-critical-temperatures-for-various-fruits" target="_blank" rel="noopener">Penn State</a> · <a href="https://open-meteo.com/en/docs/ensemble-api" target="_blank" rel="noopener">Open-Meteo</a></p>';
 }
 
 /* ---------- 我的园子：收藏多个产区（任务三 多园管理） ----------
@@ -1875,7 +2136,10 @@ function applyStaticLang(){
   S(".cta-row .btn-primary",T("查看农事安排","See the plan"));
   S(".cta-row .btn-ghost",T("打开农事月历","Open the calendar"));
   S(".hero-tool .tool-head .t",T("您家桃园 · 今日速览","Your orchard · today at a glance"));
-  if(G.fc){ $("fresh").textContent=T("已更新到 ","Updated ")+new Date().toLocaleTimeString(T("zh-CN","en-US"),{hour:"2-digit",minute:"2-digit"}); }
+  if(G.weatherUnavailable){ $("fresh").textContent=T("暂时无法获取气象数据，请检查网络后点击「刷新」重试","Weather data unavailable — check your connection and tap “Refresh”"); }
+  else if(G.fc){ $("fresh").textContent=Number.isFinite(G.staleAt)
+    ? T("缓存数据 · 上次获取 ","Cached data · fetched ")+new Date(G.staleAt).toLocaleString(T("zh-CN","en-US"))
+    : T("已更新到 ","Updated ")+new Date().toLocaleTimeString(T("zh-CN","en-US"),{hour:"2-digit",minute:"2-digit"}); }
   else { $("fresh").textContent=T("数据加载中…","Loading data…"); }
   const HS=[["花期预估","Bloom (est.)","按冬春积温推算","from winter-spring GDD"],["最近采收品种","Next to pick","早熟品种最先","early varieties first"],["未来 16 天关注日","Watch days (next 16)","霜冻和发病天气","frost & disease weather"],["休眠期低温累计","Winter chill so far","0–7.2℃ 小时累计","0–7.2°C hours banked"]];
   document.querySelectorAll(".hero-tool .stat-grid .stat-cell").forEach((cell,i)=>{
@@ -1913,7 +2177,7 @@ function applyStaticLang(){
   S("#f1-card h3",T('<span class="ic">❄️</span>花期防冻 <span class="tagline">开花怕冻，提前几天就知道</span>','<span class="ic">❄️</span>Bloom frost alert <span class="tagline">frost at bloom, known days ahead</span>'));
   const f1titles=document.querySelectorAll("#f1-card .chart-title");
   if(f1titles.length) f1titles[0].textContent=T("未来 16 天最低温走势（虚线 = 当前阶段 T10）","Min temps, next 16 days (dashed = current-stage T10)");
-  S("#f1-card details summary",T("看看前几年冻过多少天","How frosty were past springs?"));
+  S("#frost-replay summary",T("看看前几年冻过多少天","How frosty were past springs?"));
   const rbtn=document.querySelector("#f1-replay button");
   if(rbtn) rbtn.textContent=T("调出前三年春天","Load the past three springs");
   /* 物候人工修正（任务一）：月历徽标文案 + 防冻卡上报入口（标题/按钮/选项/说明都在 renderPhenoBox 内出双语） */
@@ -1936,8 +2200,8 @@ function applyStaticLang(){
     "<tr><td>"+T("疮痂病","Peach scab")+'</td><td class="mono">'+T("日均温≥16℃ 且（有雨或湿度≥90%）","mean ≥16°C and (rain or RH ≥90%)")+"</td><td>"+T("Texas A&amp;M：&gt;16℃ 高湿产孢","Texas A&amp;M: &gt;16°C, humid sporulation")+"</td></tr>");
   S("#disease details p.note",T("标出来的日子意思是「这种天气病菌容易侵染」，请提前一两天做准备；具体打什么药、怎么打，请听科技小院和植保站的。","Marked days are when pathogens infect easily — get ready a day or two ahead. For products and rates, follow your local extension/plant-protection service."));
   S("#irrigation h3",T('<span class="ic">💧</span>要不要浇水 <span class="tagline">近 30 天下没下雨、树喝了多少水，一眼看缺不缺</span>','<span class="ic">💧</span>To water or not <span class="tagline">rain in vs. water used — see the deficit at a glance</span>'));
-  S("#irrigation details summary",T("这笔水分账是怎么算的（科学依据）","How the water balance works (the science)"));
-  S("#irrigation details p.note",T("把最近 30 天的降雨（按 75% 算有效，其余流走蒸发）减去桃树这阵子「喝掉」的水（按国际通用的参考蒸发量 ET₀ × 桃树各月系数折算），得出的就是水分盈亏：负得越多，土里欠的水越多。下一步要不要等雨，看未来 7 天的降雨预报。此为简化算法，没有考虑土壤保水能力差异；具体浇多少，结合扒土看墒和实际情况掌握。","Rain over the last 30 days (75% counted effective — the rest runs off or evaporates) minus what the trees drank (reference ET₀ × peach crop coefficient by month) gives the water balance: the more negative, the more the soil owes. The 7-day rain forecast says whether to wait. A simplified budget — soil reserve isn't modeled; confirm by digging before you decide."));
+  S("#water-science summary",T("这笔水分账是怎么算的（科学依据）","How the water balance works (the science)"));
+  S("#water-science p.note",T("把最近 30 天的降雨（按 75% 算有效，其余流走蒸发），加上记录的实际浇水量，再减去桃树这阵子「喝掉」的水（按国际通用的参考蒸发量 ET₀ × 桃树各月系数折算），得出的就是水分盈亏：负得越多，土里欠的水越多。下一步要不要等雨，看未来 7 天的降雨预报。此为简化算法，没有考虑土壤保水能力差异；具体浇多少，结合扒土看墒和实际情况掌握。","Rain over the last 30 days (75% counted effective — the rest runs off or evaporates) plus logged irrigation, minus what the trees drank (reference ET₀ × peach crop coefficient by month) gives the water balance: the more negative, the more the soil owes. The 7-day rain forecast says whether to wait. A simplified budget — soil reserve isn't modeled; confirm by digging before you decide."));
   const calT=document.querySelector('.cal-nav button[aria-label="本月"]');
   if(calT){ calT.textContent=T("今","Now"); calT.setAttribute("aria-label",T("本月","This month")); }
   /* 工作原理 */
@@ -1949,7 +2213,7 @@ function applyStaticLang(){
     "<tr><td>"+T("冻害预警","Frost alert")+"</td><td>"+T("16 天预报 + 历史积温","16-day forecast + GDD history")+"</td><td>"+T("物候阶段 × 临界温度表比对","phenology stage × critical temps")+"</td><td>"+T("红/黄/绿灯 + 防灾动作","red/yellow/green + actions")+"</td></tr>"+
     "<tr><td>"+T("需冷量","Chill tracking")+"</td><td>"+T("11 月起小时级温度","hourly temps since Nov")+"</td><td>"+T("0–7.2℃ 小时累计 vs 品种需求","0–7.2°C hour total vs variety need")+"</td><td>"+T("休眠满足度 + 暖冬预警","chill satisfaction + warm-winter flag")+"</td></tr>"+
     "<tr><td>"+T("采收窗口","Pick windows")+"</td><td>"+T("盛花估算 + 品种发育期 + 降雨预报","bloom est. + variety DAFB + rain")+"</td><td>"+T("盛花 + DAFB，叠加晴雨窗","bloom + DAFB + dry-day windows")+"</td><td>"+T("窗口日期 + 抢晴建议","window dates + weather advice")+"</td></tr>"+
-    "<tr><td>"+T("浇水决策","Water balance")+"</td><td>"+T("近 30 天降水 + ET₀ 蒸发量 + 未来 7 天降雨","30-day rain + ET₀ + 7-day rain")+"</td><td>"+T("水分盈亏 = 0.75×降水 − ET₀×各月系数","balance = 0.75×rain − ET₀×monthly Kc")+"</td><td>"+T("浇不浇、等多久、补多少","water now / wait / how much")+"</td></tr>"+
+    "<tr><td>"+T("浇水决策","Water balance")+"</td><td>"+T("近 30 天降水 + ET₀ 蒸发量 + 未来 7 天降雨","30-day rain + ET₀ + 7-day rain")+"</td><td>"+T("水分盈亏 = 0.75×降水 + 实际浇水 − ET₀×各月系数","balance = 0.75×rain + irrigation − ET₀×monthly Kc")+"</td><td>"+T("浇不浇、等多久、补多少","water now / wait / how much")+"</td></tr>"+
     "<tr><td>"+T("疏果套袋","Thinning & bagging")+"</td><td>"+T("盛花估算","bloom estimate")+"</td><td>"+T("盛花 + 25/35/56 天三个节点","bloom +25/35/56 d")+"</td><td>"+T("疏果/套袋时间窗提醒","thinning/bagging windows")+"</td></tr>"+
     "<tr><td>"+T("病害风险","Disease risk")+"</td><td>"+T("预报温湿雨","forecast temp/humidity/rain")+"</td><td>"+T("三种病害侵染气象条件判定","infection-weather rules ×3")+"</td><td>"+T("逐日风险色块 + 用药窗口提示","daily risk colors + spray windows")+"</td></tr>"+
     "<tr><td>"+T("虫害预测","Pest forecast")+"</td><td>"+T("全年积温（7.2℃ 基点）+ 盛花锚点","season degree days (7.2°C) + bloom anchor")+"</td><td>"+T("梨小食心虫世代积温节点比对（175/750/1400 ℃·d）","OFM generation thresholds (175/750/1400 DD)")+"</td><td>"+T("各代防治窗口提醒","per-brood spray windows")+"</td></tr>");
@@ -1958,6 +2222,7 @@ function applyStaticLang(){
   S("#changelog .sec-head h2",T("更新日志","Changelog"));
   S("#changelog .sec-head p",T("助手隔一阵子就会升级一次，这里记着每一版加了什么新本事。手机上如果看到的还是老样子，刷新一下页面就是最新版。","The assistant gets upgrades every so often; every release is recorded here. If it still looks like the old version, refresh the page."));
   S("#changelog .card",
+    '<div class="log-item"><div class="log-ver"><span class="v">v4.3</span><span class="d">2026/10/08</span></div><div class="log-body"><div class="t">'+T("实测记录、小时防冻和实际浇水账","Orchard records, hourly frost watch and irrigation balance")+'</div><ul><li>'+T("首页可记最低温、降雨和采收日，分产区保存，可编辑和备份。","Record minimum temperature, rainfall and picking dates at the top; edit and back up records per region.")+'</li><li>'+T("未来 72 小时逐小时防冻提醒与集合预报范围。","Hourly frost watch and ensemble ranges for the next 72 hours.")+'</li><li>'+T("浇水卡内记录每日浇水量和墒情，实测降雨与浇水计入水分账。","Log daily irrigation and soil condition in the water card; measured rain and irrigation enter the water balance.")+'</li></ul></div></div>'+
     '<div class="log-item"><div class="log-ver"><span class="v">v4.2</span><span class="d">2026/09/20</span></div><div class="log-body"><div class="t">'+T("能报花期了：您看到的真花，比模型准","Report your bloom: real flowers beat the model")+"</div><ul>"+
     "<li>🌱 "+T("新增物候上报：在「花期防冻」卡里报一下现蕾/露瓣/初花/盛花和日期，防冻、疏果、套袋、采收的日子全部按您家实况重算","New phenology report: in the frost card, report the bud/first-bloom/full-bloom stage and date — frost, thinning, bagging and pick dates all recalculate to your orchard")+"</li>"+
     "<li>🔄 "+T("点「恢复气象推算」随时退回；上报按产区分别记忆，刷新或换产区再回来都还在","One tap returns to the weather estimate; reports are kept per region and survive refreshes")+"</li>"+
@@ -1999,19 +2264,19 @@ function applyStaticLang(){
   renderMyOrchards();
   /* 欢迎弹窗 */
   S("#welcomeCard",'<button class="wc-x" id="welcomeClose" aria-label="'+T("关闭欢迎卡片","Close welcome card")+'">✕</button>'+
-    '<span class="wc-badge">'+T("🎉 已更新到 v4.2","🎉 Updated to v4.2")+"</span>"+
+    '<span class="wc-badge">'+T("🎉 已更新到 v4.3","🎉 Updated to v4.3")+"</span>"+
     "<h3 id=\"wc-title\">"+T("欢迎使用桃园农事助手","Welcome to Peach Orchard Assistant")+"</h3>"+
     '<p class="wc-sub">'+T("给平谷桃农的免费小助手：什么时候防冻、哪天能采桃、要不要浇水，打开手机就能看。不用注册，不用 Cookie，不收集任何个人信息。","A free helper for peach growers: when to guard against frost, when to pick, whether to water — at a glance on your phone. No sign-up, no cookies, no personal data collected.")+"</p>"+
     '<ul class="wc-list">'+
-    "<li>🌱 "+T("可上报自家实际花期，全站日期跟着您家的树走","Report your orchard's real bloom stage — every date follows your trees")+"</li>"+
-    "<li>💧 "+T("新增「要不要浇水」：算清水分账，旱不旱一眼看出","New water balance: the deficit at a glance")+"</li>"+
-    "<li>✂️ "+T("疏果、套袋的日子自动排进农事安排","Thinning & bagging days land in your plan")+"</li>"+
+    "<li>📝 "+T("首页填写实测最低温、降雨和采收日，分产区保存","Record orchard minimum temperature, rain and picking dates by region")+"</li>"+
+    "<li>💧 "+T("记下实际浇水量，水分账跟着更新","Log actual irrigation to update the water balance")+"</li>"+
+    "<li>❄️ "+T("新增未来 72 小时逐小时防冻提醒","New hourly frost watch for the next 72 hours")+"</li>"+
     "<li>🗺️ "+T("新增美国、日本著名桃产区，中英双语","US & Japanese peach regions added; now bilingual")+"</li>"+
     "<li>📱 "+T("可添加到手机主屏幕，信号差也能打开看","Add to home screen — works on weak connections")+"</li></ul>"+
     '<div class="wc-btns"><button class="btn btn-primary" id="welcomeStart">'+T("开始使用","Get started")+'</button><button class="btn btn-ghost" id="welcomeLater">'+T("稍后再看","Later")+'</button></div>'+
     '<p class="wc-foot">'+T("每次升级加了什么，拉到底部「更新日志」都能查到。","Every release is logged at the bottom under “Changelog”.")+"</p>");
   /* 页脚 */
-  S("footer .foot-inner p",T("开发：彭宇程 · 梁扬益 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style=\"color:var(--ink-3)\">（版本 v4.2）</span>","Built by Peng Yucheng & Liang Yangyi · China Agricultural University summer field team. Free to use; data refreshes every 30 minutes, or tap refresh. Advice is for reference — for major decisions consult your local plant-protection service. <span style=\"color:var(--ink-3)\">(v4.2)</span>"));
+  S("footer .foot-inner p",T("开发：彭宇程 · 梁扬益 · 中国农业大学未来技术学院暑期实践小队。免费使用，数据每半小时自动更新，也可点刷新。农事建议供参考，重要决策请咨询当地植保部门。<span style=\"color:var(--ink-3)\">（版本 v4.3）</span>","Built by Peng Yucheng & Liang Yangyi · China Agricultural University summer field team. Free to use; data refreshes every 30 minutes, or tap refresh. Advice is for reference — for major decisions consult your local plant-protection service. <span style=\"color:var(--ink-3)\">(v4.3)</span>"));
   S("footer .links",'<a href="#plan">'+T("推进方案","Plan")+'</a><a href="#calendar">'+T("月历","Calendar")+'</a><a href="#howto">'+T("说明","About")+"</a>");
 }
 function setLang(lang){
@@ -2020,7 +2285,8 @@ function setLang(lang){
   try{ localStorage.setItem("taoyuan-lang", LANG); }catch(e){}
   applyStaticLang();
   buildLocOptions();
-  if(G.fc){ renderF1(); renderF2().catch(()=>{}); renderF4(); renderF5(); renderPest(); renderF3(); renderCal(); updateHero(); renderPlan(); }   /* F2 异步：数据走 localStorage 缓存，离线失败保留原文案 */
+  renderRecordForms(); renderHourlyFrost();
+  if(G.fc){ renderF1(); renderF4(); renderF5(); renderPest(); renderF3(); renderCal(); updateHero(); renderPlan(); renderF2(false).catch(()=>{}); }
   renderStats();
 }
 let cdLeft=AUTO_MIN*60;
@@ -2041,6 +2307,7 @@ document.querySelectorAll(".lang-switch .lang-opt").forEach(b=>{
 });
 applyStaticLang();
 buildLocOptions();
+renderRecordForms(true); renderHourlyFrost();
 renderStats();
 
 /* ---------- 移动端抽屉导航 ---------- */
@@ -2087,7 +2354,7 @@ try{
 
 /* ---------- 欢迎弹窗：每个新版本首次打开时出现一次 ---------- */
 (function(){
-  const WELCOME_VER = "v4.2";   /* 发新版时：改这里 + 更新「更新日志」区块 */
+  const WELCOME_VER = "v4.3";   /* 发新版时：改这里 + 更新「更新日志」区块 */
   const card=$("welcomeCard"), backdrop=$("welcomeBackdrop");
   if(!card||!backdrop) return;
   let seen=null; try{ seen=localStorage.getItem("welcomeSeen"); }catch(e){}
