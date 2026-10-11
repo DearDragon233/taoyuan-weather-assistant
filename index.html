@@ -319,6 +319,11 @@ body.modal-open { overflow: hidden; }
 .howto td:first-child { font-weight: 600; white-space: nowrap; }
 .howto tr:last-child td { border-bottom: none; }
 
+/* 页脚二维码（离线点阵 + SVG 渲染，零依赖） */
+.foot-qr { text-align: center; }
+.foot-qr svg { width: 92px; height: 92px; display: block; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 6px; box-sizing: content-box; margin: 0 auto; }
+.foot-qr .qr-cap { font-size: 11px; color: var(--ink-3); margin-top: 6px; max-width: 108px; }
+
 /* 页脚 */
 footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18px; text-align: left; }
 .foot-inner { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
@@ -732,6 +737,10 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 40px; margin-top: 18
       <a href="#plan">推进方案</a>
       <a href="#calendar">月历</a>
       <a href="#howto">说明</a>
+    </div>
+    <div class="foot-qr">
+      <div id="foot-qr-img"></div>
+      <div class="qr-cap" id="qr-cap">手机扫码打开本站</div>
     </div>
   </div>
 </footer>
@@ -1997,6 +2006,7 @@ function applyStaticLang(){
   const moBox=$("myOrchards"); if(moBox) moBox.setAttribute("aria-label",T("我的园子摘要","My orchards summary"));
   renderFavBtn();
   renderMyOrchards();
+  renderFootQR();
   /* 欢迎弹窗 */
   S("#welcomeCard",'<button class="wc-x" id="welcomeClose" aria-label="'+T("关闭欢迎卡片","Close welcome card")+'">✕</button>'+
     '<span class="wc-badge">'+T("🎉 已更新到 v4.2","🎉 Updated to v4.2")+"</span>"+
@@ -2084,6 +2094,20 @@ try{
     });
   }
 }catch(e){ /* 浏览器不支持 SW：静默跳过 */ }
+
+/* ---------- 页脚二维码：29×29 离线点阵（v3-M，内容=本站首页地址），
+   生成与扫码验证脚本见仓库 docs/PROPOSAL-wall-calendar.md 的同款做法；此处仅 SVG 渲染 ---------- */
+const QR_MATRIX = "1111111001100100100100111111110000010001101110000101000001101110100111110011101010111011011101001011111000100101110110111010000011101110001011101100000101111011001111010000011111111010101010101010111111100000000000000100100000000000100101101010000110010101000000110010001111011011010100100100101111101000001011110111110111100011000001010010000101101111001101101001110001110101110011101011000001101110000000001111111001100011101010011110011110001100110111100001101011110111110111101101110000010010001010001000010000111010011001011100001100010001011001100100101001101010110110100011100110101100001010001111101000000000010111100110110001011111111110000101100000101010010100000101111110110101000111111011101000100010110011111000110111010101100100111111111110101110100111001010110000111011000001001110010111010110001011111110111111110110110110010";
+function renderFootQR(){
+  const box=$("foot-qr-img"); if(!box) return;
+  const n=29, pad=2, size=n+pad*2;
+  let r="";
+  for(let y=0;y<n;y++) for(let x=0;x<n;x++)
+    if(QR_MATRIX[y*n+x]==="1") r+='<rect x="'+(x+pad)+'" y="'+(y+pad)+'" width="1" height="1"/>';
+  box.innerHTML='<svg viewBox="0 0 '+size+' '+size+'" shape-rendering="crispEdges" role="img" aria-label="'+T("本站地址二维码","Site address QR code")+'"><rect width="'+size+'" height="'+size+'" fill="#fff"/><g fill="#1c1917">'+r+"</g></svg>";
+  const cap=$("qr-cap"); if(cap) cap.textContent=T("手机扫码打开本站","Scan to open on your phone");
+}
+renderFootQR();
 
 /* ---------- 欢迎弹窗：每个新版本首次打开时出现一次 ---------- */
 (function(){
